@@ -1,12 +1,12 @@
 # 🔍 sift
 
-Data filtering and extraction engine. Processes and refines information from diverse sources.
+Web search, research synthesis, fact verification, and entity extraction. Separates signal from noise across the open web.
 
 ---
 
 ## 📖 Overview
 
-Sift filters and extracts data. Processes raw information, removes noise, and refines signals from diverse sources.
+Sift is a core component of the Indigo system. See SKILL.md for operational details.
 
 ---
 
@@ -18,29 +18,15 @@ Sift filters and extracts data. Processes raw information, removes noise, and re
 git clone https://github.com/indigokarasu/sift.git
 ```
 
-### 🛠️ Tool Surface
+### 🛠️ Configuration
 
-```
-sift.filter(data, criteria, ...)        🔍 Filter data
-sift.extract_signals(...)               ⚡ Extract signals
-sift.refine_data(raw_data, ...)        🔄 Refine noisy data
-sift.search(query, sources, ...)        🔎 Search and extract
-sift.deduplicate(...)                   ✓ Remove duplicates
-```
+Read `SKILL.md` for:
+- ⚙️ Operational behavior
+- 🔗 Skill cooperation
+- 📋 Tool surface
+- 🔒 Privacy and data handling
 
-### 📤 Output
-
-- **sift_filtered** — Filtered and refined data
-- **sift_signals** — Extracted signals and patterns
-- **sift_summary** — Data quality and completeness report
-
----
-
-## ⚙️ Configuration
-
-Read `SKILL.md` for operational details, filtering algorithms, and cooperation with other skills.
-
-Read `references/` for schemas and examples.
+Read `references/` for detailed schemas, heuristics, and examples.
 
 ---
 

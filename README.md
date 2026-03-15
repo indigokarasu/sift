@@ -1,12 +1,12 @@
-# 🔍 sift
+# sift
 
-Data filtering and extraction engine. Processes and refines information from diverse sources.
+🔍 Data filtering and extraction engine. Processes and refines information from diverse sources.
 
 ---
 
 ## 📖 Overview
 
-Sift handles core responsibilities in the Indigo system. See SKILL.md for operational details.
+Usift handles core responsibilities in the Indigo system. See SKILL.md for operational details.
 
 ---
 

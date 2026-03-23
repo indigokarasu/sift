@@ -31,6 +31,59 @@ Sift owns web research, fact verification, and structured entity extraction.
 
 Sift does not own: person-focused OSINT (Scout), image processing (Look), knowledge graph writes (Elephas), pattern analysis (Corvus), social graph (Weave).
 
+
+## Functions
+
+### sift_search()
+
+**Purpose:** execute a search query with automatic tier selection and query rewriting
+
+**Returns:** Operation result
+
+### sift_research()
+
+**Purpose:** run a multi-source research session producing a structured research journal
+
+**Returns:** Operation result
+
+### sift_verify()
+
+**Purpose:** fact-check a specific claim across multiple sources with consensus scoring
+
+**Returns:** Operation result
+
+### sift_summarize()
+
+**Purpose:** summarize a document or URL with structured entity extraction
+
+**Returns:** Operation result
+
+### sift_extract()
+
+**Purpose:** extract entities, claims, statistics, and relationships from content
+
+**Returns:** Operation result
+
+### sift_thread_list()
+
+**Purpose:** list active research threads with entity overlap detection
+
+**Returns:** Operation result
+
+### sift_status()
+
+**Purpose:** return current state: active threads, quota usage, source reputation summary
+
+**Returns:** Operation result
+
+### sift_journal()
+
+**Purpose:** write journal for the current run; called at end of every run
+
+**Returns:** Operation result
+
+
+
 ## Commands
 
 - `sift.search` — execute a search query with automatic tier selection and query rewriting

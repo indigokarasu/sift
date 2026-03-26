@@ -1,12 +1,14 @@
 ---
 name: ocas-sift
-description: Sift: web search, research synthesis, fact verification, and entity extraction. The system's general research engine. Use for topic research, web lookups, fact-checking, document summarization, comparison research, or structured information extraction. Trigger phrases: 'search for', 'look up', 'research this topic', 'fact check', 'compare', 'summarize this', 'what is', 'find information about'. Do not use for person-focused OSINT investigations (use Scout) or image processing (use Look).
+source: https://github.com/indigokarasu/sift
+install: openclaw skill install https://github.com/indigokarasu/sift
+description: Use when searching the web, synthesizing research across multiple sources, verifying facts, summarizing documents, or extracting structured entities. The system's general research engine for topic research, web lookups, fact-checking, comparisons, and deep multi-source sessions. Trigger phrases: 'search for', 'look up', 'research this topic', 'fact check', 'compare', 'summarize this', 'what is', 'find information about'. Do not use for person-focused OSINT investigations (use Scout) or image processing (use Look).
 metadata: {"openclaw":{"emoji":"🔬"}}
 ---
 
 # Sift
 
-Sift retrieves information from the web, evaluates reliability across multiple sources, extracts structured knowledge, and produces reliable answers or research artifacts.
+Sift is the system's general research engine, retrieving and synthesizing information from the web across a tiered source hierarchy — internal knowledge first, then free web search, then rate-limited semantic research providers for deep work. It evaluates source reliability through cross-source agreement scoring, extracts structured entities from retrieved content, and emits enrichment candidates to Chronicle so researched knowledge accumulates over time.
 
 ## When to use
 
@@ -30,59 +32,6 @@ Sift never performs OSINT investigations on individuals. If the primary entity o
 Sift owns web research, fact verification, and structured entity extraction.
 
 Sift does not own: person-focused OSINT (Scout), image processing (Look), knowledge graph writes (Elephas), pattern analysis (Corvus), social graph (Weave).
-
-
-## Functions
-
-### sift_search()
-
-**Purpose:** execute a search query with automatic tier selection and query rewriting
-
-**Returns:** Operation result
-
-### sift_research()
-
-**Purpose:** run a multi-source research session producing a structured research journal
-
-**Returns:** Operation result
-
-### sift_verify()
-
-**Purpose:** fact-check a specific claim across multiple sources with consensus scoring
-
-**Returns:** Operation result
-
-### sift_summarize()
-
-**Purpose:** summarize a document or URL with structured entity extraction
-
-**Returns:** Operation result
-
-### sift_extract()
-
-**Purpose:** extract entities, claims, statistics, and relationships from content
-
-**Returns:** Operation result
-
-### sift_thread_list()
-
-**Purpose:** list active research threads with entity overlap detection
-
-**Returns:** Operation result
-
-### sift_status()
-
-**Purpose:** return current state: active threads, quota usage, source reputation summary
-
-**Returns:** Operation result
-
-### sift_journal()
-
-**Purpose:** write journal for the current run; called at end of every run
-
-**Returns:** Operation result
-
-
 
 ## Commands
 
@@ -235,8 +184,9 @@ public
 
 ## Support file map
 
-File | When to read
-`references/schemas.md` | Before creating sessions, threads, or extraction records
-`references/search_tiers.md` | Before tier selection or escalation
-`references/query_rewrite.md` | Before query rewriting
-`references/journal.md` | Before sift.journal; at end of every run
+| File | When to read |
+|---|---|
+| `references/schemas.md` | Before creating sessions, threads, or extraction records |
+| `references/search_tiers.md` | Before tier selection or escalation |
+| `references/query_rewrite.md` | Before query rewriting |
+| `references/journal.md` | Before sift.journal; at end of every run |

@@ -20,10 +20,11 @@ Sift is the default first stop for any question that requires going beyond what 
 | `sift.thread.list` | List active research threads with entity overlap detection |
 | `sift.status` | Active threads, quota usage, source reputation summary |
 | `sift.journal` | Write journal for the current run |
+| `sift.update` | Pull latest from GitHub source (preserves journals and data) |
 
 ## Setup
 
-`sift.init` runs automatically on first invocation and creates all required directories, config.json, and JSONL files. No manual setup is required. Sift is purely reactive -- no scheduled tasks.
+`sift.init` runs automatically on first invocation and creates all required directories, config.json, and JSONL files. No manual setup is required. It also registers the `sift:update` cron job (midnight daily) for automatic self-updates.
 
 ## Dependencies
 
@@ -38,9 +39,14 @@ Sift is the default first stop for any question that requires going beyond what 
 
 ## Scheduled Tasks
 
-This skill is purely reactive. No scheduled tasks.
+| Job | Mechanism | Schedule | Command |
+|---|---|---|---|
+| `sift:update` | cron | `0 0 * * *` (midnight daily) | Self-update from GitHub source |
 
 ## Changelog
+
+### v2.2.1 -- March 27, 2026
+- Added `sift.update` command and midnight cron for automatic version-checked self-updates
 
 ### v2.2.0 -- March 22, 2026
 - Routing improvements

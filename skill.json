@@ -1,6 +1,6 @@
 {
   "name": "ocas-sift",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "Sift: web search, research synthesis, fact verification, and entity extraction. The system's general research engine. Use for topic research, web lookups, fact-checking, document summarization, comparison research, or structured information extraction. Trigger phrases: 'search for', 'look up', 'research this topic', 'fact check', 'compare', 'summarize this', 'what is', 'find information about', 'update sift'. Do not use for person-focused OSINT investigations (use Scout) or image processing (use Look).",
   "author": "Indigo Karasu",
   "email": "mx.indigo.karasu@gmail.com"

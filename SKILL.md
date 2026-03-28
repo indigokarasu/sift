@@ -2,7 +2,7 @@
 name: ocas-sift
 source: https://github.com/indigokarasu/sift
 install: openclaw skill install https://github.com/indigokarasu/sift
-description: Use when searching the web, synthesizing research across multiple sources, verifying facts, summarizing documents, or extracting structured entities. The system's general research engine for topic research, web lookups, fact-checking, comparisons, and deep multi-source sessions. Trigger phrases: 'search for', 'look up', 'research this topic', 'fact check', 'compare', 'summarize this', 'what is', 'find information about'. Do not use for person-focused OSINT investigations (use Scout) or image processing (use Look).
+description: Use when searching the web, synthesizing research across multiple sources, verifying facts, summarizing documents, or extracting structured entities. The system's general research engine for topic research, web lookups, fact-checking, comparisons, and deep multi-source sessions. Trigger phrases: 'search for', 'look up', 'research this topic', 'fact check', 'compare', 'summarize this', 'what is', 'find information about', 'update sift'. Do not use for person-focused OSINT investigations (use Scout) or image processing (use Look).
 metadata: {"openclaw":{"emoji":"🔬"}}
 ---
 

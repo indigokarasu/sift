@@ -33,6 +33,19 @@ Sift owns web research, fact verification, and structured entity extraction.
 
 Sift does not own: person-focused OSINT (Scout), image processing (Look), knowledge graph writes (Elephas), pattern analysis (Corvus), social graph (Weave).
 
+## Ontology types
+
+Sift works with these types from `spec-ocas-ontology.md`:
+
+- **Entity/Person, Entity/AI** — people and agents identified during research.
+- **Place** — locations, venues, and organizations.
+- **Concept/Event, Concept/Idea** — events, topics, and themes extracted from research.
+- **Thing/DigitalArtifact** — documents, articles, and digital records.
+
+Sift emits Signals to Elephas for entities and relationships extracted with confidence ≥ med. Signal `payload.type` is the ontology type of the primary entity. `source_journal_type` is `"Research"`.
+
+Sift may read Thread's active context for query rewriting and Weave's database for entity disambiguation (both cooperative read-only; see `spec-ocas-interfaces.md` Cooperative Query Interfaces).
+
 ## Commands
 
 - `sift.search` — execute a search query with automatic tier selection and query rewriting
@@ -157,8 +170,8 @@ skill_okrs:
 ## Optional skill cooperation
 
 - Elephas — emit Signal files for Chronicle promotion after every extraction
-- Thread — may read recent browsing context for query rewriting (cooperative, not required)
-- Weave — may use Weave for entity disambiguation
+- Thread — may read recent browsing context for query rewriting (cooperative read-only; see `spec-ocas-interfaces.md` Cooperative Query Interfaces)
+- Weave — may use Weave for entity disambiguation (cooperative read-only; see `spec-ocas-interfaces.md` Cooperative Query Interfaces)
 - Chronicle — may read Chronicle (read-only) for entity context
 
 ## Journal outputs

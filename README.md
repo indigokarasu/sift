@@ -45,6 +45,10 @@ Sift is the default first stop for any question that requires going beyond what 
 
 ## Changelog
 
+### v2.5.0 -- April 2, 2026
+- Added `user_relevance` field on all emitted Elephas signals (default `agent_only` for research, `user` when user-requested)
+- Structured entity observations in journal payloads (`entities_observed` with relevance tags)
+
 ### v2.3.0 -- March 27, 2026
 - Added `sift.update` command and midnight cron for automatic version-checked self-updates
 

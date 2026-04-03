@@ -103,7 +103,7 @@ Users may override with phrases like "quick answer", "deep dive", "compare", or 
 ## Search tier selection
 
 - **Tier 1 — Internal Knowledge**: LLM knowledge, conversation context, Chronicle if available.
-- **Tier 2 — Free Web Search**: Brave Search API, SearXNG, DuckDuckGo. Default for all queries.
+- **Tier 2 — Free Web Search**: Brave Search API, SearXNG, DuckDuckGo + agent-reach platform search (Twitter/X, Reddit, LinkedIn, GitHub, etc.) running in parallel. Default for all queries. Results deduplicated by URL and content hash.
 - **Tier 3 — Semantic Research**: Exa, Tavily. Deep research with sparse sources only. Quota-limited.
 
 Read `references/search_tiers.md` for provider details and escalation criteria.

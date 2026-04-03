@@ -6,10 +6,12 @@ Use for: very fast answers that do not require external search.
 Cost: zero.
 
 ## Tier 2 — Free Web Search
-Providers (priority order): Brave Search API, SearXNG instance, DuckDuckGo.
-Use for: standard research queries.
+Web providers (priority order): Brave Search API, SearXNG instance, DuckDuckGo.
+Platform search (parallel): agent-reach (Twitter/X, Reddit, LinkedIn, GitHub, Weibo, WeChat Articles, Bilibili, XiaoHongShu, YouTube, V2EX, Xueqiu, RSS feeds).
+Use for: standard research queries. Platform search runs concurrently with web search.
 Cost: free.
-Fallback: if the primary provider fails or is slow, fall back to the next in priority order.
+Fallback: if the primary web provider fails, fall back to the next in priority order. If agent-reach fails or is rate-limited, Tier 2 completes with web results only.
+Deduplication: merge web and platform results by URL and content hash before returning.
 
 ## Tier 3 — Semantic Research
 Providers: Exa, Tavily.

@@ -278,3 +278,13 @@ public
 | `references/search_tiers.md` | Before tier selection or escalation |
 | `references/query_rewrite.md` | Before query rewriting |
 | `references/journal.md` | Before sift.journal; at end of every run |
+
+## Update command
+
+This skill self-updates every 24 hours via:
+
+```bash
+openclaw sift.update
+```
+
+This pulls the latest version from GitHub and restarts the skill's background tasks if applicable.

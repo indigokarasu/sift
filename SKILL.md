@@ -88,6 +88,7 @@ Sift may read Thread's active context for query rewriting and Weave's database f
 - `sift.status` — return current state: active threads, quota usage, source reputation summary
 - `sift.journal` — write journal for the current run; called at end of every run
 - `sift.update` — pull latest from GitHub source; preserves journals and data
+- `sift.fetch [url]` — extract clean Markdown content from a URL. Runs Scrapling first (fast HTTP for static sites, headless browser for JS-heavy sites); falls back to Jina Reader (`r.jina.ai/<url>`) if Scrapling output is below content threshold. Returns Markdown with structure preserved. Use for summarizing a specific page or document the user provides.
 
 ## Response modes
 
@@ -102,11 +103,17 @@ Users may override with phrases like "quick answer", "deep dive", "compare", or 
 
 ## Search tier selection
 
-- **Tier 1 — Internal Knowledge**: LLM knowledge, conversation context, Chronicle if available.
-- **Tier 2 — Free Web Search**: Brave Search API, SearXNG, DuckDuckGo + agent-reach platform search (Twitter/X, Reddit, LinkedIn, GitHub, etc.) running in parallel. Default for all queries. Results deduplicated by URL and content hash.
-- **Tier 3 — Semantic Research**: Exa, Tavily. Deep research with sparse sources only. Quota-limited.
+All configured search sources fire in parallel. Results are deduplicated by URL and content hash.
 
-Read `references/search_tiers.md` for provider details and escalation criteria.
+- **Internal knowledge** — LLM knowledge, conversation context, Chronicle if available. Always runs first as a pre-check.
+- **Free web search (parallel fan-out)** — all of the following fire simultaneously:
+  - **N2 MCP** (`n2_web_search`) — SearXNG-backed, 70+ engines, no API key required. Registered during `sift.init`. Also provides `n2_news_search` for recency-focused queries.
+  - **Brave Search API** — structured web results. Runs when `BRAVE_SEARCH_API_KEY` is set.
+  - **SearXNG** — self-hosted if `SEARXNG_URL` env var is set; otherwise N2 MCP covers this.
+  - **Platform search** — agent-reach on Twitter/X, Reddit, LinkedIn, GitHub, etc.
+- **Semantic research** — Exa, Tavily. Deep research only. Quota-limited (~50 calls/day combined). Runs when standard web search is insufficient.
+
+Read `references/search_tiers.md` for provider details.
 
 ## Source reputation model
 
@@ -125,6 +132,19 @@ After every Sift command that produces results:
 1. Persist session, entities, sources, and decisions to local JSONL files
 2. For each extracted entity or relationship with confidence >= `med`: write a Signal file to `~/openclaw/db/ocas-elephas/intake/{signal_id}.signal.json`. Use Signal schema from `spec-ocas-shared-schemas.md`. Every Signal must include `user_relevance` (see Ontology types section). Set `"user"` if the run was user-initiated or the entity connects to a `user_relevance: "user"` Chronicle entry; otherwise `"agent_only"`.
 3. Write journal via `sift.journal`
+
+## sift.fetch behavior
+
+`sift.fetch [url]` extracts clean Markdown from a specific URL.
+
+**Fetch pipeline (sequential within the command):**
+1. **Scrapling** — domain-aware: fast HTTP mode for static sites (~1–3s), headless browser mode for JS-heavy sites (~5–15s). Requires `scrapling[fetchers]` and `html2text` Python packages.
+2. **Jina Reader** — fallback at `https://r.jina.ai/<url>` if Scrapling returns below content threshold. Free tier: 200 requests/day. Skipped for platforms where it performs poorly (WeChat, Zhihu, Juejin, CSDN).
+3. **Fail cleanly** — if both methods fail, return a clear error message. No silent empty result. No retry.
+
+Default output: Markdown with headings, links, lists, code blocks, and blockquotes preserved. Pass `--json` for metadata output (url, mode used, content length).
+
+Do not use `sift.fetch` for general search — it fetches a specific known URL only.
 
 ## Chronicle interaction
 
@@ -234,6 +254,29 @@ On first invocation of any Sift command, run `sift.init`:
 5. Ensure `~/openclaw/db/ocas-elephas/intake/` exists (create if missing)
 6. Register cron job `sift:update` if not already present (check `openclaw cron list` first)
 7. Log initialization as a DecisionRecord in `decisions.jsonl`
+8. **N2 MCP setup** (run once; skip if `n2-free-search` MCP already registered):
+   - Check: `openclaw mcp list | grep n2-free-search`
+   - If not registered, add to OpenClaw MCP config:
+     ```json
+     {
+       "mcpServers": {
+         "n2-free-search": {
+           "command": "npx",
+           "args": ["-y", "n2-free-search"]
+         }
+       }
+     }
+     ```
+   - For self-hosted SearXNG, set `SEARXNG_URL` env var and use:
+     ```json
+     { "env": { "SEARXNG_URL": "http://localhost:8080" } }
+     ```
+
+9. **Scrapling setup** (required for `sift.fetch`; run once):
+   ```bash
+   pip install scrapling[fetchers] html2text
+   python3 -c "from scrapling.fetchers import PlaywrightFetcher; PlaywrightFetcher.auto_match_install()"
+   ```
 
 ## Background tasks
 

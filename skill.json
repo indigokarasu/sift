@@ -1,26 +1,40 @@
 {
   "name": "ocas-sift",
-  "version": "2.6.1",
-  "description": "Sift: web search, research synthesis, fact verification, and entity extraction. The system's general research engine. Use for topic research, web lookups, fact-checking, document summarization, comparison research, or structured information extraction. Trigger phrases: 'search for', 'look up', 'research this topic', 'fact check', 'compare', 'summarize this', 'what is', 'find information about', 'update sift'. Do not use for person-focused OSINT investigations (use Scout) or image processing (use Look).",
+  "version": "2.7.0",
+  "description": "Sift: web search, research synthesis, fact verification, entity extraction, and URL content extraction. The system's general research engine. Use for topic research, web lookups, fact-checking, document summarization, comparison research, structured information extraction, or reading a specific URL. Trigger phrases: 'search for', 'look up', 'research this topic', 'fact check', 'compare', 'summarize this', 'what is', 'find information about', 'read this URL', 'fetch this page', 'update sift'. Do not use for person-focused OSINT investigations (use Scout) or image processing (use Look).",
   "author": "Indigo Karasu",
   "email": "mx.indigo.karasu@gmail.com",
   "skill_type": "system",
   "requires": {
+    "mcp": [
+      {
+        "name": "n2-free-search",
+        "command": "npx",
+        "args": ["-y", "n2-free-search"],
+        "description": "Free unlimited web search via SearXNG (70+ engines). Registered during sift.init.",
+        "required": false,
+        "note": "No API key required. Falls back gracefully if npx/node unavailable."
+      }
+    ],
+    "pip": [
+      "scrapling[fetchers]",
+      "html2text"
+    ],
     "credentials": [
       {
         "name": "brave_search_api_key",
-        "description": "Brave Search API key for Tier 2 web search",
+        "description": "Brave Search API key for structured web search",
         "required": false,
-        "note": "Falls back to DuckDuckGo if unavailable"
+        "note": "N2 MCP covers this path if unavailable"
       },
       {
         "name": "exa_api_key",
-        "description": "Exa API key for Tier 3 semantic research",
+        "description": "Exa API key for semantic research",
         "required": false
       },
       {
         "name": "tavily_api_key",
-        "description": "Tavily API key for Tier 3 semantic research",
+        "description": "Tavily API key for semantic research",
         "required": false
       }
     ]
@@ -43,7 +57,8 @@
     "requires_binaries": [
       "gh",
       "tar",
-      "python3"
+      "python3",
+      "npx"
     ]
   },
   "scheduled_tasks": [

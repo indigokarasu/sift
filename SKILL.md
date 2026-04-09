@@ -13,7 +13,7 @@ description: >
 metadata:
   author: Indigo Karasu
   email: mx.indigo.karasu@gmail.com
-  version: "2.8.0"
+  version: "2.8.1"
   hermes:
     tags: [search, research, web]
     category: signal
@@ -26,12 +26,11 @@ metadata:
     visibility: public
     filesystem:
       read:
-        - "$OCAS_DATA_ROOT/data/ocas-sift/"
-        - "$OCAS_DATA_ROOT/journals/ocas-sift/"
+        - "{agent_root}/commons/data/ocas-sift/"
+        - "{agent_root}/commons/journals/ocas-sift/"
       write:
-        - "$OCAS_DATA_ROOT/data/ocas-sift/"
-        - "$OCAS_DATA_ROOT/journals/ocas-sift/"
-        - "$OCAS_DATA_ROOT/db/ocas-elephas/intake/"
+        - "{agent_root}/commons/data/ocas-sift/"
+        - "{agent_root}/commons/journals/ocas-sift/"
     self_update:
       source: "https://github.com/indigokarasu/sift"
       mechanism: "version-checked tarball from GitHub via gh CLI"
@@ -185,7 +184,7 @@ Extracted entities are emitted as enrichment candidates for Elephas.
 After every Sift command that produces results:
 
 1. Persist session, entities, sources, and decisions to local JSONL files
-2. For each extracted entity or relationship with confidence >= `med`: write a Signal file to `$OCAS_DATA_ROOT/db/ocas-elephas/intake/{signal_id}.signal.json`. Use Signal schema from `spec-ocas-shared-schemas.md`. Every Signal must include `user_relevance` (see Ontology types section). Set `"user"` if the run was user-initiated or the entity connects to a `user_relevance: "user"` Chronicle entry; otherwise `"agent_only"`.
+2. For each extracted entity or relationship with confidence >= `med`: write a Signal file to the `signal` payload field in the journal entry. Use Signal schema from `spec-ocas-shared-schemas.md`. Every Signal must include `user_relevance` (see Ontology types section). Set `"user"` if the run was user-initiated or the entity connects to a `user_relevance: "user"` Chronicle entry; otherwise `"agent_only"`.
 3. Write journal via `sift.journal`
 
 ## sift.fetch behavior
@@ -203,11 +202,11 @@ Do not use `sift.fetch` for general search — it fetches a specific known URL o
 
 ## Chronicle interaction
 
-Sift never writes directly to Chronicle. It emits enrichment candidates via Signal files to `$OCAS_DATA_ROOT/db/ocas-elephas/intake/{signal_id}.signal.json`. Elephas decides promotion.
+Sift never writes directly to Chronicle. It emits enrichment candidates via Signal files to the `signal` payload field in the journal entry. Elephas decides promotion.
 
 ## Inter-skill interfaces
 
-Sift writes Signal files to Elephas intake: `$OCAS_DATA_ROOT/db/ocas-elephas/intake/{signal_id}.signal.json`
+Sift writes Signal files to Elephas (via journal signal payload): the `signal` payload field in the journal entry
 
 Every Signal must include the `user_relevance` field (`"user"` or `"agent_only"`). Elephas decides promotion.
 
@@ -218,7 +217,7 @@ See `spec-ocas-interfaces.md` for signal format.
 ## Storage layout
 
 ```
-$OCAS_DATA_ROOT/data/ocas-sift/
+{agent_root}/commons/data/ocas-sift/
   config.json
   sessions.jsonl
   threads.jsonl
@@ -227,7 +226,7 @@ $OCAS_DATA_ROOT/data/ocas-sift/
   decisions.jsonl
   reports/
 
-$OCAS_DATA_ROOT/journals/ocas-sift/
+{agent_root}/commons/journals/ocas-sift/
   YYYY-MM-DD/
     {run_id}.json
 ```
@@ -302,11 +301,11 @@ Journals must include an `entities_observed` array listing every entity encounte
 
 On first invocation of any Sift command, run `sift.init`:
 
-1. Create `$OCAS_DATA_ROOT/data/ocas-sift/` and subdirectories (`reports/`)
+1. Create `{agent_root}/commons/data/ocas-sift/` and subdirectories (`reports/`)
 2. Write default `config.json` with ConfigBase fields if absent
 3. Create empty JSONL files: `sessions.jsonl`, `threads.jsonl`, `entities.jsonl`, `sources.jsonl`, `decisions.jsonl`
-4. Create `$OCAS_DATA_ROOT/journals/ocas-sift/`
-5. Ensure `$OCAS_DATA_ROOT/db/ocas-elephas/intake/` exists (create if missing)
+4. Create `{agent_root}/commons/journals/ocas-sift/`
+5. Ensure journal payload fields (see interfaces specification) exists (create if missing)
 6. Register cron job `sift:update` if not already present (check the platform scheduling registry first)
 7. Log initialization as a DecisionRecord in `decisions.jsonl`
 8. **N2 MCP setup** (run once; skip if `n2-free-search` MCP already registered):

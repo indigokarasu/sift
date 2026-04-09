@@ -1,9 +1,64 @@
 ---
 name: ocas-sift
-source: https://github.com/indigokarasu/sift
-install: openclaw skill install https://github.com/indigokarasu/sift
-description: Use when searching the web, synthesizing research across multiple sources, verifying facts, summarizing documents, or extracting structured entities. The system's general research engine for topic research, web lookups, fact-checking, comparisons, and deep multi-source sessions. Trigger phrases: 'search for', 'look up', 'research this topic', 'fact check', 'compare', 'summarize this', 'what is', 'find information about', 'update sift'. Do not use for person-focused OSINT investigations (use Scout) or image processing (use Look).
-metadata: {"openclaw":{"emoji":"🔬"}}
+description: >
+  Sift: web search, research synthesis, fact verification, entity extraction,
+  and URL content extraction. The system's general research engine. Use for
+  topic research, web lookups, fact-checking, document summarization,
+  comparison research, structured information extraction, or reading a
+  specific URL. Trigger phrases: 'search for', 'look up', 'research this
+  topic', 'fact check', 'compare', 'summarize this', 'what is', 'find
+  information about', 'read this URL', 'fetch this page', 'update sift'. Do
+  not use for person-focused OSINT investigations (use Scout) or image
+  processing (use Look).
+metadata:
+  author: Indigo Karasu
+  email: mx.indigo.karasu@gmail.com
+  version: "2.8.0"
+  hermes:
+    tags: [search, research, web]
+    category: signal
+    cron:
+      - name: "sift:update"
+        schedule: "0 0 * * *"
+        command: "sift.update"
+  openclaw:
+    skill_type: system
+    visibility: public
+    filesystem:
+      read:
+        - "$OCAS_DATA_ROOT/data/ocas-sift/"
+        - "$OCAS_DATA_ROOT/journals/ocas-sift/"
+      write:
+        - "$OCAS_DATA_ROOT/data/ocas-sift/"
+        - "$OCAS_DATA_ROOT/journals/ocas-sift/"
+        - "$OCAS_DATA_ROOT/db/ocas-elephas/intake/"
+    self_update:
+      source: "https://github.com/indigokarasu/sift"
+      mechanism: "version-checked tarball from GitHub via gh CLI"
+      command: "sift.update"
+      requires_binaries: [gh, tar, python3, npx]
+    requires:
+      mcp:
+        - name: "n2-free-search"
+          description: "Free unlimited web search via SearXNG (70+ engines). Registered during sift.init."
+          required: false
+      pip:
+        - "scrapling[fetchers]"
+        - "html2text"
+      credentials:
+        - name: "brave_search_api_key"
+          description: "Brave Search API key for structured web search"
+          required: false
+        - name: "exa_api_key"
+          description: "Exa API key for semantic research"
+          required: false
+        - name: "tavily_api_key"
+          description: "Tavily API key for semantic research"
+          required: false
+    cron:
+      - name: "sift:update"
+        schedule: "0 0 * * *"
+        command: "sift.update"
 ---
 
 # Sift
@@ -130,7 +185,7 @@ Extracted entities are emitted as enrichment candidates for Elephas.
 After every Sift command that produces results:
 
 1. Persist session, entities, sources, and decisions to local JSONL files
-2. For each extracted entity or relationship with confidence >= `med`: write a Signal file to `~/openclaw/db/ocas-elephas/intake/{signal_id}.signal.json`. Use Signal schema from `spec-ocas-shared-schemas.md`. Every Signal must include `user_relevance` (see Ontology types section). Set `"user"` if the run was user-initiated or the entity connects to a `user_relevance: "user"` Chronicle entry; otherwise `"agent_only"`.
+2. For each extracted entity or relationship with confidence >= `med`: write a Signal file to `$OCAS_DATA_ROOT/db/ocas-elephas/intake/{signal_id}.signal.json`. Use Signal schema from `spec-ocas-shared-schemas.md`. Every Signal must include `user_relevance` (see Ontology types section). Set `"user"` if the run was user-initiated or the entity connects to a `user_relevance: "user"` Chronicle entry; otherwise `"agent_only"`.
 3. Write journal via `sift.journal`
 
 ## sift.fetch behavior
@@ -148,11 +203,11 @@ Do not use `sift.fetch` for general search — it fetches a specific known URL o
 
 ## Chronicle interaction
 
-Sift never writes directly to Chronicle. It emits enrichment candidates via Signal files to `~/openclaw/db/ocas-elephas/intake/{signal_id}.signal.json`. Elephas decides promotion.
+Sift never writes directly to Chronicle. It emits enrichment candidates via Signal files to `$OCAS_DATA_ROOT/db/ocas-elephas/intake/{signal_id}.signal.json`. Elephas decides promotion.
 
 ## Inter-skill interfaces
 
-Sift writes Signal files to Elephas intake: `~/openclaw/db/ocas-elephas/intake/{signal_id}.signal.json`
+Sift writes Signal files to Elephas intake: `$OCAS_DATA_ROOT/db/ocas-elephas/intake/{signal_id}.signal.json`
 
 Every Signal must include the `user_relevance` field (`"user"` or `"agent_only"`). Elephas decides promotion.
 
@@ -163,7 +218,7 @@ See `spec-ocas-interfaces.md` for signal format.
 ## Storage layout
 
 ```
-~/openclaw/data/ocas-sift/
+$OCAS_DATA_ROOT/data/ocas-sift/
   config.json
   sessions.jsonl
   threads.jsonl
@@ -172,7 +227,7 @@ See `spec-ocas-interfaces.md` for signal format.
   decisions.jsonl
   reports/
 
-~/openclaw/journals/ocas-sift/
+$OCAS_DATA_ROOT/journals/ocas-sift/
   YYYY-MM-DD/
     {run_id}.json
 ```
@@ -247,12 +302,12 @@ Journals must include an `entities_observed` array listing every entity encounte
 
 On first invocation of any Sift command, run `sift.init`:
 
-1. Create `~/openclaw/data/ocas-sift/` and subdirectories (`reports/`)
+1. Create `$OCAS_DATA_ROOT/data/ocas-sift/` and subdirectories (`reports/`)
 2. Write default `config.json` with ConfigBase fields if absent
 3. Create empty JSONL files: `sessions.jsonl`, `threads.jsonl`, `entities.jsonl`, `sources.jsonl`, `decisions.jsonl`
-4. Create `~/openclaw/journals/ocas-sift/`
-5. Ensure `~/openclaw/db/ocas-elephas/intake/` exists (create if missing)
-6. Register cron job `sift:update` if not already present (check `openclaw cron list` first)
+4. Create `$OCAS_DATA_ROOT/journals/ocas-sift/`
+5. Ensure `$OCAS_DATA_ROOT/db/ocas-elephas/intake/` exists (create if missing)
+6. Register cron job `sift:update` if not already present (check the platform scheduling registry first)
 7. Log initialization as a DecisionRecord in `decisions.jsonl`
 8. **N2 MCP setup** (run once; skip if `n2-free-search` MCP already registered):
    - Check: `openclaw mcp list | grep n2-free-search`
@@ -285,7 +340,7 @@ On first invocation of any Sift command, run `sift.init`:
 | `sift:update` | cron | `0 0 * * *` (midnight daily) | `sift.update` |
 
 ```
-openclaw cron add --name sift:update --schedule "0 0 * * *" --command "sift.update" --sessionTarget isolated --lightContext true --timezone America/Los_Angeles
+# Task declared in SKILL.md frontmatter metadata.{platform}.cron
 ```
 
 

@@ -13,7 +13,7 @@ description: >
 metadata:
   author: Indigo Karasu
   email: mx.indigo.karasu@gmail.com
-  version: "2.8.1"
+  version: "2.8.2"
   hermes:
     tags: [search, research, web]
     category: signal
@@ -309,8 +309,8 @@ On first invocation of any Sift command, run `sift.init`:
 6. Register cron job `sift:update` if not already present (check the platform scheduling registry first)
 7. Log initialization as a DecisionRecord in `decisions.jsonl`
 8. **N2 MCP setup** (run once; skip if `n2-free-search` MCP already registered):
-   - Check: `openclaw mcp list | grep n2-free-search`
-   - If not registered, add to OpenClaw MCP config:
+   - Check: the platform MCP registry for `n2-free-search`
+   - If not registered, add to platform MCP config:
      ```json
      {
        "mcpServers": {
@@ -381,7 +381,7 @@ public
 This skill self-updates every 24 hours via:
 
 ```bash
-openclaw sift.update
+sift.update
 ```
 
 This pulls the latest version from GitHub and restarts the skill's background tasks if applicable.

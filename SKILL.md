@@ -13,7 +13,7 @@ description: >
 metadata:
   author: Indigo Karasu
   email: mx.indigo.karasu@gmail.com
-  version: "2.8.3"
+  version: "2.8.5"
   hermes:
     tags: [search, research, web]
     category: signal

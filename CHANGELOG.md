@@ -1,3 +1,9 @@
+## [2.8.5] - 2026-04-12
+
+### Fixed
+- `sift.fetch`: added explicit content-density check — Scrapling output ≥200 words returns immediately; below threshold falls through to Jina without retrying Scrapling
+- Search tier deduplication: N2 MCP is skipped when `SEARXNG_URL` is set and responding (both are SearXNG-backed; was producing duplicate results)
+
 ## [2026-04-05] N2 MCP + URL content fetcher
 
 ### Added

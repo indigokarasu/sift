@@ -48,6 +48,10 @@ Sift is the default first stop for any question that requires going beyond what 
 
 ## Changelog
 
+### v2.8.5 — April 12, 2026
+- `sift.fetch`: explicit content-density check — Scrapling output ≥200 words returns immediately; below threshold falls through to Jina without retrying Scrapling
+- Search tier deduplication: N2 MCP skipped when `SEARXNG_URL` is set and responding (both SearXNG-backed; was producing duplicate results)
+
 ### v2.5.0 -- April 2, 2026
 - Added `user_relevance` field on all emitted Elephas signals (default `agent_only` for research, `user` when user-requested)
 - Structured entity observations in journal payloads (`entities_observed` with relevance tags)

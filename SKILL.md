@@ -163,7 +163,7 @@ All configured search sources fire in parallel. Results are deduplicated by URL 
 - **Free web search (parallel fan-out)** — all of the following fire simultaneously:
   - **N2 MCP** (`n2_web_search`) — SearXNG-backed, 70+ engines, no API key required. Registered during `sift.init`. Also provides `n2_news_search` for recency-focused queries.
   - **Brave Search API** — structured web results. Runs when `BRAVE_SEARCH_API_KEY` is set.
-  - **SearXNG** — self-hosted if `SEARXNG_URL` env var is set; otherwise N2 MCP covers this.
+  - **SearXNG** — self-hosted if `SEARXNG_URL` env var is set; otherwise N2 MCP covers this. **Deduplication gate:** if `SEARXNG_URL` is set and the self-hosted instance responds, skip the N2 MCP call — both are SearXNG-backed and results would duplicate.
   - **Platform search** — agent-reach on Twitter/X, Reddit, LinkedIn, GitHub, etc.
 - **Semantic research** — Exa, Tavily. Deep research only. Quota-limited (~50 calls/day combined). Runs when standard web search is insufficient.
 
@@ -193,8 +193,9 @@ After every Sift command that produces results:
 
 **Fetch pipeline (sequential within the command):**
 1. **Scrapling** — domain-aware: fast HTTP mode for static sites (~1–3s), headless browser mode for JS-heavy sites (~5–15s). Requires `scrapling[fetchers]` and `html2text` Python packages.
-2. **Jina Reader** — fallback at `https://r.jina.ai/<url>` if Scrapling returns below content threshold. Free tier: 200 requests/day. Skipped for platforms where it performs poorly (WeChat, Zhihu, Juejin, CSDN).
-3. **Fail cleanly** — if both methods fail, return a clear error message. No silent empty result. No retry.
+2. **Content-density check** — after Scrapling returns, count words in the `html2text` output (strip markdown links before counting). If output contains **≥ 200 words** of extractable text, return immediately — do not call Jina. If output contains < 200 words, is an error body, an empty response, or a JS-gated loading page: fall through to step 3. Do not retry Scrapling in a different mode if the content-density check fails — go straight to Jina.
+3. **Jina Reader** — fallback at `https://r.jina.ai/<url>`. Free tier: 200 requests/day. Skipped for platforms where it performs poorly (WeChat, Zhihu, Juejin, CSDN).
+4. **Fail cleanly** — if both methods fail, return a clear error message. No silent empty result. No retry.
 
 Default output: Markdown with headings, links, lists, code blocks, and blockquotes preserved. Pass `--json` for metadata output (url, mode used, content length).
 

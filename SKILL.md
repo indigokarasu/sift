@@ -164,7 +164,7 @@ All configured search sources fire in parallel. Results are deduplicated by URL 
   - **N2 MCP** (`n2_web_search`) — SearXNG-backed, 70+ engines, no API key required. Registered during `sift.init`. Also provides `n2_news_search` for recency-focused queries.
   - **Brave Search API** — structured web results. Runs when `BRAVE_SEARCH_API_KEY` is set.
   - **SearXNG** — self-hosted if `SEARXNG_URL` env var is set; otherwise N2 MCP covers this. **Deduplication gate:** if `SEARXNG_URL` is set and the self-hosted instance responds, skip the N2 MCP call — both are SearXNG-backed and results would duplicate.
-  - **Platform search** — agent-reach on Twitter/X, Reddit, LinkedIn, GitHub, etc.
+  - **Platform search** — agent-reach on Twitter/X (via Mirror Rotator $\rightarrow$ Search Bridge), Reddit, LinkedIn, GitHub, etc.
 - **Semantic research** — Exa, Tavily. Deep research only. Quota-limited (~50 calls/day combined). Runs when standard web search is insufficient.
 
 Read `references/search_tiers.md` for provider details.

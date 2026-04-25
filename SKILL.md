@@ -19,7 +19,7 @@ metadata:
     category: signal
     cron:
       - name: "sift:update"
-        schedule: "0 0 * * *"
+        schedule: "15 7 * * *"
         command: "sift.update"
   openclaw:
     skill_type: system
@@ -56,7 +56,7 @@ metadata:
           required: false
     cron:
       - name: "sift:update"
-        schedule: "0 0 * * *"
+        schedule: "15 7 * * *"
         command: "sift.update"
 ---
 

@@ -232,7 +232,6 @@ See `spec-ocas-interfaces.md` for signal format.
     {run_id}.json
 ```
 
-
 Default config.json:
 ```json
 {
@@ -342,7 +341,6 @@ On first invocation of any Sift command, run `sift.init`:
 ```
 # Task declared in SKILL.md frontmatter metadata.{platform}.cron
 ```
-
 
 ## Self-update
 

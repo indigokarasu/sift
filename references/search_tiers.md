@@ -1,28 +1,44 @@
-# Sift Search Tiers
+# Google Search Tier
 
-## Tier 1 — Internal Knowledge
-Sources: LLM knowledge, current conversation context, Chronicle (if available).
-Use for: very fast answers that do not require external search.
-Cost: zero.
+- **Provider**: Google Custom Search API (CSAPI)
+- **Command**: `mcp_google_search` (custom MCP)
+- **Quota**: Free tier (1000 queries/month)
+- **Use Case**: Deep research, fact verification, structured extraction
+- **Notes**:
+  - Requires a valid Google Custom Search API key and CX ID.
+  - Use `mcp_google_search` for structured results.
+  - If MCP is not registered, skip this tier.
 
-## Tier 2 — Free Web Search
-Web providers (priority order): Brave Search API, SearXNG instance, DuckDuckGo.
-Platform search (parallel): agent-reach (Twitter/X, Reddit, LinkedIn, GitHub, Weibo, WeChat Articles, Bilibili, XiaoHongShu, YouTube, V2EX, Xueqiu, RSS feeds).
-Use for: standard research queries. Platform search runs concurrently with web search.
-Cost: free.
-Fallback: if the primary web provider fails, fall back to the next in priority order. If agent-reach fails or is rate-limited, Tier 2 completes with web results only.
-Deduplication: merge web and platform results by URL and content hash before returning.
+# Updated Search Pipeline
 
-## Tier 3 — Semantic Research
-Providers: Exa, Tavily.
-Use only when: deep research is required, sources are sparse, or semantic retrieval materially improves accuracy.
-Cost: quota-limited. Monitor daily usage via heartbeat.
-Quota field: `quota.tier3_daily_limit` in config.
+All search sources fire in parallel. Results are deduplicated by URL and content hash.
 
-## Escalation Criteria
-- Start at Tier 2 for all external queries
-- Escalate to Tier 3 only if: Tier 2 returned <3 useful results AND the query is classified as `research` mode AND Tier 3 quota is not exhausted
-- Never escalate for `quick_answer` mode queries
+- **Internal knowledge** — LLM knowledge, conversation context, Chronicle if available. Always runs first.
+- **Free web search (parallel fan-out)**:
+  - **N2 MCP** (`n2_web_search`) — SearXNG-backed, 70+ engines, no API key required.
+  - **Brave Search API** — structured web results (if `BRAVE_SEARCH_API_KEY` is set).
+  - **Google Search API** — structured results (if MCP is registered).
+  - **SearXNG** — self-hosted if `SEARXNG_URL` is set; otherwise, N2 MCP covers this.
+  - **Platform search** — agent-reach on Twitter/X, Reddit, LinkedIn, GitHub, etc.
+- **Semantic research** — Exa, Tavily. Deep research only. Quota-limited (~50 calls/day combined). Runs when standard web search is insufficient.
 
-## Provider Telemetry
-Record per-session: provider, latency_ms, results_returned, results_used. Mentor may analyze these for optimization.
+## Fallback Pivot for High-Value Targets
+
+When performing deep dives on individuals (researchers, executives, engineers) and encountering web search limitations:
+
+1. **Check credit availability** first (e.g., `mcp_tavily_tavily_search`). If it returns a 432 error, skip to Tier 2.
+2. **Tier 2: API-only collection** (fallback from cloud environments):
+   - **GitHub API** (no auth required): Search users, commits, profiles.
+   - **Semantic Scholar API** (free, 100 requests/5min): Author/paper search.
+   - **ORCID API** (free): Profile verification.
+   - **arXiv API** (free): Academic paper search.
+   - **Direct profile probing**: Curl with status code checks (e.g., LinkedIn, GitHub).
+
+## Pitfalls & Tips
+- **CAPTCHA cascade**: Cloud environments block Google/Bing/DuckDuckGo simultaneously. If two engines block, pivot to Tier 2.
+- **Semantic Scholar rate limits**: Batch requests to avoid 429 errors.
+- **LinkedIn auth walls**: Status 999 = profile exists but is bot-blocked.
+- **Google Developer profiles**: Generic content for all usernames. Not reliable.
+- **GitHub name ambiguity**: Cross-reference with commit emails for disambiguation.
+- **ORCID name matching**: Verify by checking `given-names`/`family-names` fields.
+- **Verify Identity**: Confirm roles in large collaborations (e.g., author lists).

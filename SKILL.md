@@ -38,7 +38,7 @@ metadata:
       requires_binaries: [gh, tar, python3, npx]
     requires:
       mcp:
-        - name: "n2-free-search"
+        - name: "n2-free-search, google-search"
           description: "Free unlimited web search via SearXNG (70+ engines). Registered during sift.init."
           required: false
       pip:
@@ -215,6 +215,15 @@ Sift may read from Thread (when present) for recent browsing context to improve 
 
 See `spec-ocas-interfaces.md` for signal format.
 
+## Recovery Behavior
+
+This skill implements the recovery contract from `spec-ocas-recovery.md`.
+
+- **Evidence**: Every search/research run writes an evidence record to `{agent_root}/commons/data/ocas-sift/evidence.jsonl`, including no-op runs. The `not_activity_reason` field is mandatory when no side effects occur.
+- **Gap detection**: On every wake, checks the evidence log. If gap exceeds 24h for update cron, logs `gap_detected`.
+- **Degraded mode**: When search APIs (SearXNG, Brave, Tavily) are unavailable, logs `degraded: <api>` and continues with available sources.
+- **Log compaction**: Evidence and decision logs older than 30 days (no-op) or 90 days (error/gap) compacted. Last 7 days retained.
+
 ## Storage layout
 
 ```
@@ -225,6 +234,8 @@ See `spec-ocas-interfaces.md` for signal format.
   entities.jsonl
   sources.jsonl
   decisions.jsonl
+  intents.jsonl
+  evidence.jsonl
   reports/
 
 {agent_root}/commons/journals/ocas-sift/
@@ -272,6 +283,16 @@ skill_okrs:
     direction: maximize
     target: 0.90
     evaluation_window: 30_runs
+  - name: schedule_adherence
+    metric: fraction of scheduled cron runs that completed within expected time window
+    direction: maximize
+    target: 0.95
+    evaluation_window: 30_days
+  - name: data_integrity
+    metric: fraction of runs with complete evidence records and no gaps exceeding threshold
+    direction: maximize
+    target: 0.90
+    evaluation_window: 30_days
 ```
 
 ## Optional skill cooperation
@@ -303,20 +324,20 @@ On first invocation of any Sift command, run `sift.init`:
 
 1. Create `{agent_root}/commons/data/ocas-sift/` and subdirectories (`reports/`)
 2. Write default `config.json` with ConfigBase fields if absent
-3. Create empty JSONL files: `sessions.jsonl`, `threads.jsonl`, `entities.jsonl`, `sources.jsonl`, `decisions.jsonl`
+3. Create empty JSONL files: `sessions.jsonl`, `threads.jsonl`, `entities.jsonl`, `sources.jsonl`, `decisions.jsonl`, `intents.jsonl`, `evidence.jsonl`
 4. Create `{agent_root}/commons/journals/ocas-sift/`
 5. Ensure journal payload fields (see interfaces specification) exists (create if missing)
 6. Register cron job `sift:update` if not already present (check the platform scheduling registry first)
 7. Log initialization as a DecisionRecord in `decisions.jsonl`
-8. **N2 MCP setup** (run once; skip if `n2-free-search` MCP already registered):
-   - Check: the platform MCP registry for `n2-free-search`
+8. **N2 MCP setup** (run once; skip if `n2-free-search, google-search` MCP already registered):
+   - Check: the platform MCP registry for `n2-free-search, google-search`
    - If not registered, add to platform MCP config:
      ```json
      {
        "mcpServers": {
-         "n2-free-search": {
+         "n2-free-search, google-search": {
            "command": "npx",
-           "args": ["-y", "n2-free-search"]
+           "args": ["-y", "n2-free-search, google-search"]
          }
        }
      }
@@ -384,12 +405,6 @@ sift.update
 ```
 
 This pulls the latest version from GitHub and restarts the skill's background tasks if applicable.
-
-## Integrated: research-fallback-pivot
-
-# Research Fallback Pivot
-
-When performing deep dives on individuals (researchers, executives, engineers) and encountering `web_search` credit limits or Google CAPTCHAs, pivot from "General Search" to "Direct Registry Navigation."
 
 ## Trigger Conditions
 - `web_search` returns "Insufficient credits".

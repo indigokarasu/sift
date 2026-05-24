@@ -1,63 +1,19 @@
 ---
 name: ocas-sift
-description: >
-  Sift: web search, research synthesis, fact verification, entity extraction,
-  and URL content extraction. The system's general research engine. Use for
-  topic research, web lookups, fact-checking, document summarization,
-  comparison research, structured information extraction, or reading a
-  specific URL. Trigger phrases: 'search for', 'look up', 'research this
-  topic', 'fact check', 'compare', 'summarize this', 'what is', 'find
-  information about', 'read this URL', 'fetch this page', 'update sift'. Do
-  not use for person-focused OSINT investigations (use Scout) or image
-  processing (use Look).
+description: 'Sift: web search, research synthesis, fact verification, entity extraction,
+  and URL content extraction. The system''s general research engine. Use for topic
+  research, web lookups, fact-checking, document summarization, comparison research,
+  structured information extraction, or reading a specific URL. Trigger phrases: ''search
+  for'', ''look up'', ''research this topic'', ''fact check'', ''compare'', ''summarize
+  this'', ''what is'', ''find information about'', ''read this URL'', ''fetch this
+  page'', ''update sift''. Do not use for person-focused OSINT investigations (use
+  Scout) or image processing (use Look).
+
+  '
+license: MIT
 metadata:
   author: Indigo Karasu
-  email: mx.indigo.karasu@gmail.com
-  version: "2.8.5"
-  hermes:
-    tags: [search, research, web]
-    category: signal
-    cron:
-      - name: "sift:update"
-        schedule: "15 7 * * *"
-        command: "sift.update"
-  openclaw:
-    skill_type: system
-    visibility: public
-    filesystem:
-      read:
-        - "{agent_root}/commons/data/ocas-sift/"
-        - "{agent_root}/commons/journals/ocas-sift/"
-      write:
-        - "{agent_root}/commons/data/ocas-sift/"
-        - "{agent_root}/commons/journals/ocas-sift/"
-    self_update:
-      source: "https://github.com/indigokarasu/sift"
-      mechanism: "version-checked tarball from GitHub via gh CLI"
-      command: "sift.update"
-      requires_binaries: [gh, tar, python3, npx]
-    requires:
-      mcp:
-        - name: "n2-free-search, google-search"
-          description: "Free unlimited web search via SearXNG (70+ engines). Registered during sift.init."
-          required: false
-      pip:
-        - "scrapling[fetchers]"
-        - "html2text"
-      credentials:
-        - name: "brave_search_api_key"
-          description: "Brave Search API key for structured web search"
-          required: false
-        - name: "exa_api_key"
-          description: "Exa API key for semantic research"
-          required: false
-        - name: "tavily_api_key"
-          description: "Tavily API key for semantic research"
-          required: false
-    cron:
-      - name: "sift:update"
-        schedule: "15 7 * * *"
-        command: "sift.update"
+  version: 2.8.7
 ---
 
 # Sift
@@ -164,8 +120,10 @@ All configured search sources fire in parallel. Results are deduplicated by URL 
   - **N2 MCP** (`n2_web_search`) — SearXNG-backed, 70+ engines, no API key required. Registered during `sift.init`. Also provides `n2_news_search` for recency-focused queries.
   - **Brave Search API** — structured web results. Runs when `BRAVE_SEARCH_API_KEY` is set.
   - **SearXNG** — self-hosted if `SEARXNG_URL` env var is set; otherwise N2 MCP covers this. **Deduplication gate:** if `SEARXNG_URL` is set and the self-hosted instance responds, skip the N2 MCP call — both are SearXNG-backed and results would duplicate.
-  - **Platform search** — agent-reach on Twitter/X (via Mirror Rotator $\rightarrow$ Search Bridge), Reddit, LinkedIn, GitHub, etc.
+  - **Platform search** — agent-reach on Twitter/X (via Mirror Rotator → Search Bridge), Reddit, LinkedIn, GitHub, etc.
 - **Semantic research** — Exa, Tavily. Deep research only. Quota-limited (~50 calls/day combined). Runs when standard web search is insufficient.
+
+For detailed tier-by-tier workflow, API curl examples, and cloud environment fallbacks, read `references/research-workflow.md`.
 
 Read `references/search_tiers.md` for provider details.
 
@@ -215,6 +173,15 @@ Sift may read from Thread (when present) for recent browsing context to improve 
 
 See `spec-ocas-interfaces.md` for signal format.
 
+## Pitfalls & Tips
+
+Read `references/pitfalls.md` for the full list of 10 common pitfalls. Key highlights:
+
+- **CAPTCHA cascade:** From cloud environments, ALL major search engines block headless browsers simultaneously. Switch to Tier 2 API-only collection immediately. See `references/research-workflow.md` for the full workflow.
+- **Semantic Scholar rate limits:** Space requests 3-5 seconds apart; batch author data into single calls.
+- **LinkedIn/Google Developer profiles:** Auth-walled or generic — don't rely on them for identity confirmation.
+- **Reverse image search from cloud:** Google blocks from cloud/VPS IPs. Use Yandex Images instead.
+
 ## Recovery Behavior
 
 This skill implements the recovery contract from `spec-ocas-recovery.md`.
@@ -227,73 +194,13 @@ This skill implements the recovery contract from `spec-ocas-recovery.md`.
 ## Storage layout
 
 ```
-{agent_root}/commons/data/ocas-sift/
-  config.json
-  sessions.jsonl
-  threads.jsonl
-  entities.jsonl
-  sources.jsonl
-  decisions.jsonl
-  intents.jsonl
-  evidence.jsonl
-  reports/
-
-{agent_root}/commons/journals/ocas-sift/
-  YYYY-MM-DD/
-    {run_id}.json
-```
-
-Default config.json:
-```json
-{
-  "skill_id": "ocas-sift",
-  "skill_version": "2.3.0",
-  "config_version": "1",
-  "created_at": "",
-  "updated_at": "",
-  "search": {
-    "default_tier": 2,
-    "tier3_daily_limit": 50
-  },
-  "retention": {
-    "days": 30,
-    "max_records": 10000
-  }
-}
+{agent_root}/commons/data/ocas-sift/  → config, sessions, threads, entities, sources, decisions, intents, evidence (all .jsonl), reports/
+{agent_root}/commons/journals/ocas-sift/YYYY-MM-DD/{run_id}.json
 ```
 
 ## OKRs
 
-Universal OKRs from spec-ocas-journal.md apply to all runs.
-
-```yaml
-skill_okrs:
-  - name: source_accuracy
-    metric: fraction of extracted facts confirmed by cross-source agreement
-    direction: maximize
-    target: 0.85
-    evaluation_window: 30_runs
-  - name: tier3_quota_compliance
-    metric: fraction of days where Tier 3 usage stays within daily limit
-    direction: maximize
-    target: 1.0
-    evaluation_window: 30_runs
-  - name: entity_extraction_precision
-    metric: fraction of extracted entities with valid source reference
-    direction: maximize
-    target: 0.90
-    evaluation_window: 30_runs
-  - name: schedule_adherence
-    metric: fraction of scheduled cron runs that completed within expected time window
-    direction: maximize
-    target: 0.95
-    evaluation_window: 30_days
-  - name: data_integrity
-    metric: fraction of runs with complete evidence records and no gaps exceeding threshold
-    direction: maximize
-    target: 0.90
-    evaluation_window: 30_days
-```
+Universal OKRs from spec-ocas-journal.md apply to all runs. Five OKRs: source_accuracy (0.85), tier3_quota_compliance (1.0), entity_extraction_precision (0.90), schedule_adherence (0.95), data_integrity (0.90).
 
 ## Optional skill cooperation
 
@@ -301,6 +208,7 @@ skill_okrs:
 - Thread — may read recent browsing context for query rewriting (cooperative read-only; see `spec-ocas-interfaces.md` Cooperative Query Interfaces)
 - Weave — may use Weave for entity disambiguation (cooperative read-only; see `spec-ocas-interfaces.md` Cooperative Query Interfaces)
 - Chronicle — may read Chronicle (read-only) for entity context
+- Look — reverse image search via `google-image-source-search`. When Sift encounters an image URL during research and needs to find its source or matches, delegate to Look's reverse image search capability.
 
 ## Journal outputs
 
@@ -365,23 +273,7 @@ On first invocation of any Sift command, run `sift.init`:
 
 ## Self-update
 
-`sift.update` pulls the latest package from the `source:` URL in this file's frontmatter. Runs silently — no output unless the version changed or an error occurred.
-
-1. Read `source:` from frontmatter → extract `{owner}/{repo}` from URL
-2. Read local version from SKILL.md frontmatter `metadata.version`
-3. Fetch remote version from SKILL.md frontmatter: `gh api "repos/{owner}/{repo}/contents/SKILL.md" --jq '.content' | base64 -d | grep 'version:' | head -1 | sed 's/.*"\(.*\)".*/\1/'`
-4. If remote version equals local version → stop silently
-5. Download and install:
-   ```bash
-   TMPDIR=$(mktemp -d)
-   gh api "repos/{owner}/{repo}/tarball/main" > "$TMPDIR/archive.tar.gz"
-   mkdir "$TMPDIR/extracted"
-   tar xzf "$TMPDIR/archive.tar.gz" -C "$TMPDIR/extracted" --strip-components=1
-   cp -R "$TMPDIR/extracted/"* ./
-   rm -rf "$TMPDIR"
-   ```
-6. On failure → retry once. If second attempt fails, report the error and stop.
-7. Output exactly: `I updated Sift from version {old} to {new}`
+`sift.update` pulls the latest package from the `source:` URL in this file's frontmatter. Runs silently — no output unless the version changed or an error occurred. Compares local vs remote version via GitHub API, downloads tarball if different, extracts in place. Retries once on failure. Output on success: `I updated Sift from version {old} to {new}`.
 
 ## Visibility
 
@@ -395,6 +287,8 @@ public
 | `references/search_tiers.md` | Before tier selection or escalation |
 | `references/query_rewrite.md` | Before query rewriting |
 | `references/journal.md` | Before sift.journal; at end of every run |
+| `references/research-workflow.md` | When executing research sessions, especially from cloud environments with CAPTCHA/credit issues |
+| `references/pitfalls.md` | Before research runs; when encountering rate limits, auth walls, or cloud IP blocks |
 
 ## Update command
 
@@ -405,109 +299,3 @@ sift.update
 ```
 
 This pulls the latest version from GitHub and restarts the skill's background tasks if applicable.
-
-## Trigger Conditions
-- `web_search` returns "Insufficient credits".
-- `browser_navigate` to Google/Scholar returns a "detected unusual traffic" or CAPTCHA page.
-- High-value targets who likely have profiles in structured academic or legal databases.
-
-## Step-by-Step Workflow
-
-### Tier 0: Check credit availability first
-Before anything else, try one `mcp_tavily_tavily_search` call. If it returns a 432 "usage limit" error, immediately skip to Tier 2 (API-only). Do not waste additional calls on credit-limited services.
-
-### Tier 1: Web search (if credits available)
-- Use `mcp_tavily_tavily_search` or `web_search` for broad queries.
-- If credits run out mid-research, pivot immediately to Tier 2.
-
-### Tier 2: API-only collection (proven fallback from cloud environments)
-
-When all web search services are credit-limited AND major search engines (Google, Bing) return CAPTCHA pages from cloud IPs, use this specific API stack in order:
-
-1. **GitHub API** (no auth required, curl-based):
-   - User search: `curl -s "https://api.github.com/search/users?q=FULLNAME"`
-   - Commit search by email: `curl -s "https://api.github.com/search/commits?q=author-email:EMAIL"`
-   - User profile: `curl -s "https://api.github.com/users/LOGIN"` (returns name, company, bio, location, blog)
-   - Search Users, Issues, Commits, and Organizations. Email-based commit search is especially precise for corporate addresses.
-
-2. **Semantic Scholar API** (free, 100 requests/5min):
-   - Author search: `curl -s "https://api.semanticscholar.org/graph/v1/author/search?query=FULLNAME&limit=5"`
-   - Author details: `curl -s "https://api.semanticscholar.org/graph/v1/author/AUTHOR_ID?fields=name,affiliations,paperCount,citationCount,hIndex,papers.title,papers.year,papers.venue,papers.citationCount,papers.authors,papers.externalIds"`
-   - Paper search: `curl -s "https://api.semanticscholar.org/graph/v1/paper/search?query=TOPIC&limit=3&fields=title,authors,year"`
-   - **Rate limit: 429 errors are common.** Space requests 3-5 seconds apart. Batch by getting all needed data per author in one call.
-
-3. **ORCID Public API** (free, JSON):
-   - Search: `curl -s -H "Accept: application/json" "https://pub.orcid.org/v3.0/search/?q=FIRSTNAME+LASTNAME&rows=3"`
-   - Profile: `curl -s -H "Accept: application/json" "https://pub.orcid.org/v3.0/{ORCID_ID}/person"`
-   - Note: Name matching is loose — results often include non-target people with similar names. Verify by checking given-name/family-name fields.
-
-4. **arXiv API** (free, XML):
-   - Search: `curl -s "http://export.arxiv.org/api/query?search_query=au:LASTNAME+FIRSTNAME&max_results=5"`
-   - Returns author names in `<name>` tags and paper titles. Limited to arXiv-indexed papers only.
-
-5. **Direct profile URL probing** (curl with status code check):
-   - `curl -s -o /dev/null -w "%{http_code}" -L --max-time 10 URL` — 200 means profile exists, 404 means not found
-   - **LinkedIn:** `https://www.linkedin.com/in/slug/` — returns 200 for valid slugs but content is auth-walled. 999 status = exists but bot-blocked.
-   - **Google Developer profiles:** `https://developers.google.com/profile/u/USERNAME` — **useless**, returns 200 for ALL usernames with identical generic content. Do not rely on these.
-   - **Google Research:** `https://research.google/people/SLUG/` — returns 404 for most researchers. URL format is not predictable. Not reliable for probing.
-   - **DuckDuckGo HTML:** Also returns CAPTCHA/empty results from cloud environments. Do not waste time on `html.duckduckgo.com/html/`.
-
-6. **Curl-based page extraction** for known URLs:
-   - When DDG HTML search (initial step) returns results with specific URLs, fetch them directly with `curl -s -L -H "User-Agent: Mozilla/5.0"` and parse with regex.
-   - Niche profile sites (conference bios, company leadership pages, industry press) often work well — Women in Tech Summit, Gambling Insider, SwissCognitive, etc.
-
-7. **DBLP** (Computer Science bibliography):
-   - Search: `curl -s "https://dblp.org/search/author/api?q=NAME&format=json&h=3"`
-   - Publication search: `curl -s "https://dblp.org/search/publ/api?q=KEYWORD&format=json&h=5"`
-   - Note: Name matching is loose; returns multiple candidates. Verify each manually.
-
-### Tier 3: Domain-specific pivots
-
-- **Google employees:** Search for their name associated with known Google projects (Gemini, Imagen, Assistant, Lens) on Semantic Scholar and arXiv. Get paper author lists to confirm association.
-- **Meta employees:** Search GitHub for `@meta.com` email commits.
-- **Patents:** Use `https://patents.google.com/` directly for inventor search.
-
-### Synthesis
-Aggregate findings from structured sources to build the profile. Mark confidence levels: "high" for confirmed (direct source match), "med" for inferred (email domain + project association), "low" for unconfirmed (name-only match without verification).
-
-### Tier 2.5: SearXNG local instance (if available)
-
-If a SearXNG instance is running locally (e.g., on localhost:8889), it can serve as an unlimited, credit-free search engine with aggregated results from multiple backends (Google, Brave, DuckDuckGo, Startpage, etc.).
-
-**How to query SearXNG via browser:**
-1. Navigate to `http://localhost:8889/search?q=YOUR+QUERY&format=json`
-2. Parse the JSON response via `browser_console` (`document.body.innerText`)
-3. Results are in the `results` array with `url`, `title`, `content`, `engine`, and `score` fields
-4. Fetch full pages by navigating to result URLs with `browser_navigate`, then extract text with `browser_console` or `browser_snapshot`
-
-**Advantages over API-only collection:**
-- Returns aggregated results from multiple search engines simultaneously
-- No API keys or credits needed
-- Supports all query types (not just person/entity lookup)
-- Direct URL extraction makes page fetching easy
-
-**Limitations:**
-- Requires a running SearXNG instance
-- Some engines may be blocked or return access denied from the server's IP
-- Result quality depends on which engines SearXNG can reach
-- No specialized academic/database APIs, just general web search
-
-**Example workflow:**
-```
-1. browser_navigate → http://localhost:8889/search?q=QUERY&format=json
-2. browser_console → document.body.innerText (parse JSON for top results)
-3. browser_navigate → https://result-url.example.com/page
-4. browser_console → document.querySelector('article,main').innerText
-5. Repeat for additional results or secondary searches
-```
-
-## Pitfalls & Tips
-- **CAPTCHA cascade:** From cloud environments, ALL major search engines (Google, Bing, DDG HTML) will block headless browsers simultaneously. If two engines block, assume all will — stop browser-based search immediately and switch to Tier 2 API-only collection.
-- **Semantic Scholar rate limits:** 429 errors are common when making rapid sequential requests. Batch author data into single calls (include all fields in one request). Wait 3-5 seconds between requests if hitting limits.
-- **LinkedIn auth walls:** LinkedIn returns HTTP 200 for valid profile slugs but shows a login wall instead of content. Status 999 means the profile exists but is bot-blocked. LinkedIn profile titles visible in the `<title>` tag can sometimes confirm name and current company.
-- **Google Developer profiles are generic:** `developers.google.com/profile/u/{username}` returns 200 for every username with identical generic content. This is NOT a valid way to confirm a person's Google employment.
-- **GitHub user search is ambiguous:** Common names (Peter Oh, Gustavo Moura) return many results. Always cross-reference with commit email search (`author-email:EMAIL`) for disambiguation.
-- **ORCID name matching is loose:** Search results frequently include non-target people with similar names. Always verify by checking the `given-names` and `family-names` fields in the profile response.
-- **Verify Identity:** In large collaborations (e.g., Imagen, Gemini author lists with 50+ people), verify the specific role or authorship order to ensure the target isn't just a peripheral contributor. Use Semantic Scholar's `papers.authors` field to confirm exact position.
-- **DBLP JSON API format:** The `.json` suffix on DBLP author pages doesn't work. Use the search API (`dblp.org/search/author/api`) instead.
-- **Browser tool CAPTCHA:** Even `browser_navigate` to Google Search triggers CAPTCHA from cloud. Do not attempt browser-based general web search from cloud environments.

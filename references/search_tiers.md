@@ -51,6 +51,16 @@ When performing deep dives on individuals (researchers, executives, engineers) a
    - **arXiv API** (free): Academic paper search.
    - **Direct profile probing**: Curl with status code checks (e.g., LinkedIn, GitHub).
 
+## Webwright — Interactive Browser Agent
+
+- **Package**: `webwright` (pip), `playwright` (already installed)
+- **Browser**: Firefox (headless) — handles sites that reject Chromium via TLS/H2 fingerprinting
+- **Use when**: Form filling, multi-step flows, JS-heavy sites, interactive filtering, tasks requiring browser state
+- **Not for**: Simple lookups (use `sift.search`) or URL extraction (use `sift.fetch`)
+- **Workspace**: `{agent_root}/commons/data/ocas-sift/webwright/`
+- **Reference**: `references/webwright-integration.md`
+- **Setup**: `pip install webwright` (already installed), `playwright install firefox`
+
 ## Reverse Image Search
 
 - **Package**: `google-image-source-search` (pip)

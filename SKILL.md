@@ -118,8 +118,8 @@ All configured search sources fire in parallel. Results are deduplicated by URL 
 - **Internal knowledge** — LLM knowledge, conversation context, Chronicle if available. Always runs first as a pre-check.
 - **Free web search (parallel fan-out)** — all of the following fire simultaneously:
   - **N2 MCP** (`n2_web_search`) — SearXNG-backed, 70+ engines, no API key required. Registered during `sift.init`. Also provides `n2_news_search` for recency-focused queries.
-  - **Brave Search API** — structured web results. Runs when `BRAVE_SEARCH_API_KEY` is set.
-  - **SearXNG** — self-hosted if `SEARXNG_URL` env var is set; otherwise N2 MCP covers this. **Deduplication gate:** if `SEARXNG_URL` is set and the self-hosted instance responds, skip the N2 MCP call — both are SearXNG-backed and results would duplicate.
+  - **Brave Search API** — structured web results. See `references/search_tiers.md` for provider configuration and API keys.
+  - **SearXNG** — self-hosted instance. See `references/search_tiers.md` for provider configuration and API keys. **Deduplication gate:** if self-hosted SearXNG responds, skip the N2 MCP call — both are SearXNG-backed and results would duplicate.
   - **Platform search** — agent-reach on Twitter/X (via Mirror Rotator → Search Bridge), Reddit, LinkedIn, GitHub, etc.
 - **Semantic research** — Exa, Tavily. Deep research only. Quota-limited (~50 calls/day combined). Runs when standard web search is insufficient.
 
@@ -208,7 +208,7 @@ Universal OKRs from spec-ocas-journal.md apply to all runs. Five OKRs: source_ac
 - Thread — may read recent browsing context for query rewriting (cooperative read-only; see `spec-ocas-interfaces.md` Cooperative Query Interfaces)
 - Weave — may use Weave for entity disambiguation (cooperative read-only; see `spec-ocas-interfaces.md` Cooperative Query Interfaces)
 - Chronicle — may read Chronicle (read-only) for entity context
-- Look — reverse image search via `google-image-source-search`. When Sift encounters an image URL during research and needs to find its source or matches, delegate to Look's reverse image search capability.
+- Look — reverse image search capability. See `references/search_tiers.md` for setup details. When Sift encounters an image URL during research and needs to find its source or matches, delegate to Look's reverse image search capability.
 
 ## Journal outputs
 
@@ -250,10 +250,7 @@ On first invocation of any Sift command, run `sift.init`:
        }
      }
      ```
-   - For self-hosted SearXNG, set `SEARXNG_URL` env var and use:
-     ```json
-     { "env": { "SEARXNG_URL": "http://localhost:8080" } }
-     ```
+  - For self-hosted SearXNG, see `references/search_tiers.md` for env var and MCP config setup.
 
 9. **Scrapling setup** (required for `sift.fetch`; run once):
    ```bash

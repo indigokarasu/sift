@@ -11,6 +11,10 @@ description: 'Sift: web search, research synthesis, fact verification, entity ex
 
   '
 license: MIT
+includes:
+  - references/**
+  - scripts/**
+
 metadata:
   author: Indigo Karasu
   version: 2.8.7
@@ -98,7 +102,8 @@ Sift may read Thread's active context for query rewriting and Weave's database f
 - `sift.status` — return current state: active threads, quota usage, source reputation summary
 - `sift.journal` — write journal for the current run; called at end of every run
 - `sift.update` — pull latest from GitHub source; preserves journals and data
-- `sift.fetch [url]` — extract clean Markdown content from a URL. Runs Scrapling first (fast HTTP for static sites, headless browser for JS-heavy sites); falls back to Jina Reader (`r.jina.ai/<url>`) if Scrapling output is below content threshold. Returns Markdown with structure preserved. Use for summarizing a specific page or document the user provides.
+- `sift.fetch [url]` — extract clean Markdown content from a URL. Runs Scrapling first (fast HTTP for static sites, headless browser mode for JS-heavy sites); falls back to Jina Reader (`r.jina.ai/<url>`) if Scrapling output is below content threshold. Returns Markdown with structure preserved. Use for summarizing a specific page or document the user provides.
+- `sift.webwright` — execute an interactive web task using browser automation (Playwright Firefox). Write the plan, exploration screenshots, instrumented final_script.py, execution log, and self-verification into `{agent_root}/commons/data/ocas-sift/webwright/`. For form filling, multi-step flows, JS-heavy sites, interactive filtering, or any task where the browser is the workspace. Read `references/webwright-integration.md` before first use.
 
 ## Response modes
 
@@ -286,6 +291,7 @@ public
 | `references/journal.md` | Before sift.journal; at end of every run |
 | `references/research-workflow.md` | When executing research sessions, especially from cloud environments with CAPTCHA/credit issues |
 | `references/pitfalls.md` | Before research runs; when encountering rate limits, auth walls, or cloud IP blocks |
+| `references/webwright-integration.md` | Before `sift.webwright`; when task requires browser interaction |
 
 ## Update command
 

@@ -18,13 +18,30 @@ This file contains provider-specific configuration details including API keys an
 
 ## Google Custom Search API (CSAPI)
 
-- **Provider**: Google Custom Search API
+- **Provider**: Google Custom Search JSON API
 - **Quota**: Free tier (1000 queries/month)
-- **Use Case**: Deep research, fact verification, structured extraction
+- **Use Case**: Fallback when free web search (SearXNG/Brave) returns insufficient results or is unavailable. Does NOT use browser automation — calls the API directly, so it is NOT affected by Google's headless browser / CAPTCHA blocks. Works reliably from datacenter/VPS IPs.
+- **Tool**: `mcp_google_workspace_search_custom` (via google-workspace MCP — already configured)
+- **Open Web Search**: Omit `site_search` parameter to search the entire web. Works identically to a normal Google search for open web queries.
+- **Quota Tracking**: Tracked by `scripts/csapi_quota.py`. Auto-resets on calendar month. Check before calling; increment after each call.
+  - `python3 ~/.hermes/skills/ocas-sift/scripts/csapi_quota.py check` — exit 0 if quota available, 1 if exhausted
+  - `python3 ~/.hermes/skills/ocas-sift/scripts/csapi_quota.py increment` — record one query
+  - `python3 ~/.hermes/skills/ocas-sift/scripts/csapi_quota.py status` — JSON dump of current usage
+  - `python3 ~/.hermes/skills/ocas-sift/scripts/csapi_quota.py remaining` — print queries remaining this month
 - **Notes**:
-  - Requires a valid Google Custom Search API key and CX ID.
-  - Use `mcp_google_search` for structured results.
-  - If MCP is not registered, skip this tier.
+  - Requires THREE things: (a) OAuth scope `https://www.googleapis.com/auth/cse` on the workspace-mcp token, (b) `GOOGLE_PSE_API_KEY` env var (the GCP Console API key, format `AIza...`), AND (c) `GOOGLE_PSE_ENGINE_ID` env var (the Custom Search Engine ID / `cx` from GCP Console → Programmable Search Engine → your engine → "Search engine ID", format like `012345678901234567890:abcdefghijk`).
+  - ⚠️ The PSE API key and engine ID must be set **manually by the owner** — the agent cannot write them through any tool due to the Hermes credential sanitizer. If CSAPI fails with "GOOGLE_PSE_API_KEY environment variable not set", the owner needs to add it to config.yaml or .env.
+  - ⚠️ The `GOOGLE_PSE_ENGINE_ID` must also be set manually for the same reason.
+  - **Multiple accounts**: The workspace-mcp has been patched (`gsearch/search_tools.py`) to use per-account API keys. Set `GOOGLE_PSE_API_KEY` for the default account (owner) and `GOOGLE_PSE_API_KEY_INDIGO` for the Indigo account. The tool auto-selects based on `user_google_email`. Each account gets its own 1,000 queries/month free tier.
+  - Quota tracking: `scripts/csapi_quota.py` tracks both accounts independently. Run `status all` to see both. The `user_google_email` parameter on `search_custom` determines which account/key/quota is used.
+  - Structured results with title, link, snippet — comparable output to browser scraping.
+  - **DO NOT use the Playwright-based `google-search` MCP** (disabled in config). Google blocks all datacenter IPs via CAPTCHA when using browser automation. CSAPI is the correct replacement.
+
+## Playwright Browser Search (DEPRECATED / DISABLED)
+
+- The `google-search` MCP (Playwright + Chromium browser scraper) has been **disabled** in the Hermes config.
+- Google permanently blocks datacenter/VPS IPs via CAPTCHA when using browser automation. This cannot be fixed with proxies or fingerprint changes.
+- Use CSAPI (`mcp_google_workspace_search_custom`) instead for reliable open web search from this VPS.
 
 ## Updated Search Pipeline
 
@@ -70,7 +87,7 @@ When performing deep dives on individuals (researchers, executives, engineers) a
 
 ## Pitfalls & Tips
 
-- **CAPTCHA cascade**: Cloud environments block Google/Bing/DuckDuckGo simultaneously. If two engines block, pivot to Tier 2.
+- **CAPTCHA cascade from VPS/cloud IPs**: The Playwright-based google-search MCP will be blocked by Google CAPTCHA from datacenter addresses. Do not retry — it will not self-resolve. Use the Server Custom Search API (`mcp_google_workspace_search_custom`) or SearXNG (`curl` to `http://localhost:8888`) instead.
 - **Semantic Scholar rate limits**: Batch requests to avoid 429 errors.
 - **LinkedIn auth walls**: Status 999 = profile exists but is bot-blocked.
 - **Google Developer profiles**: Generic content for all usernames. Not reliable.

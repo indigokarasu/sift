@@ -1,36 +1,87 @@
 ---
 name: ocas-sift
-description: 'Sift: web search, research synthesis, fact verification, entity extraction,
-  and URL content extraction. The system''s general research engine. Use for topic
-  research, web lookups, fact-checking, document summarization, comparison research,
-  structured information extraction, or reading a specific URL. Trigger phrases: ''search
-  for'', ''look up'', ''research this topic'', ''fact check'', ''compare'', ''summarize
-  this'', ''what is'', ''find information about'', ''read this URL'', ''fetch this
-  page'', ''update sift''. Do not use for person-focused OSINT investigations (use
-  Scout) or image processing (use Look).
-
-  '
+description: >-
+  Sift: web search, research synthesis, fact verification, entity extraction,
+  and URL content extraction. The system's general research engine. Use for ANY
+  task requiring web information: search, research, look up, investigate, find
+  out, check if, fact check, compare, summarize, what is, how to, product
+  recommendations, price checks, current events, or reading a specific URL.
+  TRIGGER ON: any question requiring current web data, any "investigate/find
+  out/check/look into" request, any product/price/recommendation query. Do NOT
+  use browser for search (CAPTCHA'd on VPS). The `web_search` and `web_extract`
+  MCP tools route to SearXNG automatically — for deep research, load this skill
+  directly. Do not use for person-focused OSINT (use Scout) or image
+  processing (use Look).
 license: MIT
 includes:
-  - references/**
-  - scripts/**
-
+- references/**
+- scripts/**
 metadata:
-  author: Indigo Karasu
-  version: 2.8.7
+  author: Indigo Karasu (indigokarasu)
+  version: 2.9.3
+triggers:
+- web search
+- research synthesis
+- fact verification
+- extract URL content
+- search the web
+- investigate
+- find out
+- check if
+- look into
+- product research
+- price check
+- recommendation
+- current events
+- how to
+- what is
+- compare products
 ---
 
 # Sift
 
 Sift is the system's general research engine, retrieving and synthesizing information from the web across a tiered source hierarchy — internal knowledge first, then free web search, then rate-limited semantic research providers for deep work. It evaluates source reliability through cross-source agreement scoring, extracts structured entities from retrieved content, and emits enrichment candidates to Chronicle so researched knowledge accumulates over time.
 
+## Load-First Rule for Web-Adjacent Queries
+
+**When the user asks about products, prices, reviews, how-to advice, or any information that requires current web data, load Sift FIRST before answering from domain knowledge.** This applies even if you think you already know the answer from training data.
+
+**Why this matters:** On VPS/cloud environments, browser-based search (Google, Bing, DuckDuckGo) is almost entirely blocked by CAPTCHA from datacenter IPs. The `web_search` and `web_extract` MCP tools handle basic searches automatically via SearXNG. Load this skill directly for deep research, fact-checking, comparisons, or when the MCP tools' results are insufficient.
+
+If you answer from domain knowledge without checking current sources, you may miss: product availability changes, new products on the market, updated formulations, price changes, or critical caveats (e.g., fabric-specific limitations like synthetic vs. cotton).
+
+**Pattern to follow:**
+1. User asks about a product/recommendation/how-to → load Sift
+2. Run SearXNG: `curl -s "http://localhost:8888/search?q=QUERY&format=json"`
+3. Fetch top result URLs with `curl -sL` or `sift.fetch`
+4. THEN synthesize answer with citations
+
+**Exception:** Pure factual lookups ("what is the capital of France") that don't require web data can be answered from internal knowledge.
+
 ## When to use
 
+**LOAD SIFT FIRST — before any other action — when:**
+- The user asks ANY question requiring current web data (not in your training data)
+- The user says "search for", "look up", "research", "investigate", "find out", "check if", "look into"
+- The user asks about products, prices, reviews, recommendations
+- The user asks "what is", "how to", "why does", "when did" about current topics
+- The user asks about current events, news, or recent developments
+- You need to verify a fact or claim against current sources
+- You need to compare products, technologies, or options using current data
+- You need to fetch/extract content from a specific URL
+- You're about to use the browser for ANY information-seeking purpose
+- You're about to use `execute_code` to scrape a search engine
+
+**In short: if you need information you don't already have loaded Sift first.**
+
+Specific use cases:
 - Web search and research synthesis on any topic
 - Fact verification across multiple sources with consensus scoring
 - Document summarization and structured entity extraction
 - Comparison research across products, technologies, or options
 - Deep research sessions with multi-source threading
+- Product/price/recommendation research
+- Current events and news research
 
 ## When not to use
 
@@ -56,7 +107,7 @@ Sift works with these types from `spec-ocas-ontology.md`:
 - **Concept/Event, Concept/Idea** — events, topics, and themes extracted from research.
 - **Thing/DigitalArtifact** — documents, articles, and digital records.
 
-Sift emits Signals to Elephas for entities and relationships extracted with confidence ≥ med. Signal `payload.type` is the ontology type of the primary entity. `source_journal_type` is `"Research"`. Every emitted Signal must include a `user_relevance` field.
+Sift emits Signals to Elephas for entities and relationships extracted with confidence >= med. Signal `payload.type` is the ontology type of the primary entity. `source_journal_type` is `"Research"`. Every emitted Signal must include a `user_relevance` field.
 
 ### user_relevance field
 
@@ -124,13 +175,26 @@ All configured search sources fire in parallel. Results are deduplicated by URL 
 - **Free web search (parallel fan-out)** — all of the following fire simultaneously:
   - **N2 MCP** (`n2_web_search`) — SearXNG-backed, 70+ engines, no API key required. Registered during `sift.init`. Also provides `n2_news_search` for recency-focused queries.
   - **Brave Search API** — structured web results. See `references/search_tiers.md` for provider configuration and API keys.
-  - **SearXNG** — self-hosted instance. See `references/search_tiers.md` for provider configuration and API keys. **Deduplication gate:** if self-hosted SearXNG responds, skip the N2 MCP call — both are SearXNG-backed and results would duplicate.
+  - **SearXNG** — self-hosted instance on `http://localhost:8888`. **This is the primary search source on VPS environments.** Always returns results when browser-based search is CAPTCHA-blocked.
   - **Platform search** — agent-reach on Twitter/X (via Mirror Rotator → Search Bridge), Reddit, LinkedIn, GitHub, etc.
-- **Semantic research** — Exa, Tavily. Deep research only. Quota-limited (~50 calls/day combined). Runs when standard web search is insufficient.
+- **Google Custom Search API (CSAPI)** — fallback when free web search returns insufficient results. Uses `mcp_google_workspace_search_custom`. Quota-limited: 1,000 queries/month free tier. Check quota before calling (`csapi_quota.py check`), increment after (`csapi_quota.py increment`).
 
 For detailed tier-by-tier workflow, API curl examples, and cloud environment fallbacks, read `references/research-workflow.md`.
 
-Read `references/search_tiers.md` for provider details.
+## Quick VPS Search Cheat Sheet
+
+```bash
+# Primary — SearXNG (localhost:8888, no CAPTCHA)
+curl -s "http://localhost:8888/search?q=QUERY&format=json" | python3 -c "
+import json,sys
+d=json.load(sys.stdin)
+for r in d.get('results',[])[:10]:
+    print(r['title']); print(r['url']); print(r['content'][:200]); print()
+"
+
+# Fallback — CSAPI (check quota first)
+python3 ~/.hermes/skills/ocas-sift/scripts/csapi_quota.py check
+```
 
 ## Source reputation model
 
@@ -154,114 +218,39 @@ After every Sift command that produces results:
 
 `sift.fetch [url]` extracts clean Markdown from a specific URL.
 
-**Fetch pipeline (sequential within the command):**
-1. **Scrapling** — domain-aware: fast HTTP mode for static sites (~1–3s), headless browser mode for JS-heavy sites (~5–15s). Requires `scrapling[fetchers]` and `html2text` Python packages.
-2. **Content-density check** — after Scrapling returns, count words in the `html2text` output (strip markdown links before counting). If output contains **≥ 200 words** of extractable text, return immediately — do not call Jina. If output contains < 200 words, is an error body, an empty response, or a JS-gated loading page: fall through to step 3. Do not retry Scrapling in a different mode if the content-density check fails — go straight to Jina.
-3. **Jina Reader** — fallback at `https://r.jina.ai/<url>`. Free tier: 200 requests/day. Skipped for platforms where it performs poorly (WeChat, Zhihu, Juejin, CSDN).
-4. **Fail cleanly** — if both methods fail, return a clear error message. No silent empty result. No retry.
-
-Default output: Markdown with headings, links, lists, code blocks, and blockquotes preserved. Pass `--json` for metadata output (url, mode used, content length).
-
 Do not use `sift.fetch` for general search — it fetches a specific known URL only.
 
 ## Chronicle interaction
 
-Sift never writes directly to Chronicle. It emits enrichment candidates via Signal files to the `signal` payload field in the journal entry. Elephas decides promotion.
+Sift never writes directly to Chronicle. It emits enrichment candidates via Signal files.
 
 ## Inter-skill interfaces
 
-Sift writes Signal files to Elephas (via journal signal payload): the `signal` payload field in the journal entry
-
-Every Signal must include the `user_relevance` field (`"user"` or `"agent_only"`). Elephas decides promotion.
-
-Sift may read from Thread (when present) for recent browsing context to improve query rewriting. This is a cooperative read, not a dependency.
-
-See `spec-ocas-interfaces.md` for signal format.
+Sift writes Signal files to Elephas (via journal signal payload): the `signal` payload field in the journal entry.
 
 ## Pitfalls & Tips
 
-Read `references/pitfalls.md` for the full list of 10 common pitfalls. Key highlights:
+Read `references/pitfalls.md` for the full list. Key highlights:
 
-- **CAPTCHA cascade:** From cloud environments, ALL major search engines block headless browsers simultaneously. Switch to Tier 2 API-only collection immediately. See `references/research-workflow.md` for the full workflow.
-- **Semantic Scholar rate limits:** Space requests 3-5 seconds apart; batch author data into single calls.
-- **LinkedIn/Google Developer profiles:** Auth-walled or generic — don't rely on them for identity confirmation.
-- **Reverse image search from cloud:** Google blocks from cloud/VPS IPs. Use Yandex Images instead.
+- **Answer-from-knowledge trap:** Don't answer product/how-to questions from training data alone. Use SearXNG + fetch. (See Load-First Rule above.)
+- **CAPTCHA cascade:** From cloud environments, ALL major search engines block headless browsers. Use SearXNG (`localhost:8888`) or CSAPI instead.
+- **Credential sanitizer blocks API key writes:** The Hermes output sanitizer intercepts API keys. If CSAPI fails with missing key, the owner must add it manually.
 
-## Recovery Behavior
+## Support file map
 
-This skill implements the recovery contract from `spec-ocas-recovery.md`.
-
-- **Evidence**: Every search/research run writes an evidence record to `{agent_root}/commons/data/ocas-sift/evidence.jsonl`, including no-op runs. The `not_activity_reason` field is mandatory when no side effects occur.
-- **Gap detection**: On every wake, checks the evidence log. If gap exceeds 24h for update cron, logs `gap_detected`.
-- **Degraded mode**: When search APIs (SearXNG, Brave, Tavily) are unavailable, logs `degraded: <api>` and continues with available sources.
-- **Log compaction**: Evidence and decision logs older than 30 days (no-op) or 90 days (error/gap) compacted. Last 7 days retained.
-
-## Storage layout
-
-```
-{agent_root}/commons/data/ocas-sift/  → config, sessions, threads, entities, sources, decisions, intents, evidence (all .jsonl), reports/
-{agent_root}/commons/journals/ocas-sift/YYYY-MM-DD/{run_id}.json
-```
-
-## OKRs
-
-Universal OKRs from spec-ocas-journal.md apply to all runs. Five OKRs: source_accuracy (0.85), tier3_quota_compliance (1.0), entity_extraction_precision (0.90), schedule_adherence (0.95), data_integrity (0.90).
-
-## Optional skill cooperation
-
-- Elephas — emit Signal files for Chronicle promotion after every extraction
-- Thread — may read recent browsing context for query rewriting (cooperative read-only; see `spec-ocas-interfaces.md` Cooperative Query Interfaces)
-- Weave — may use Weave for entity disambiguation (cooperative read-only; see `spec-ocas-interfaces.md` Cooperative Query Interfaces)
-- Chronicle — may read Chronicle (read-only) for entity context
-- Look — reverse image search capability. See `references/search_tiers.md` for setup details. When Sift encounters an image URL during research and needs to find its source or matches, delegate to Look's reverse image search capability.
-
-## Journal outputs
-
-- Observation Journal — search and extraction runs
-- Research Journal — structured multi-source research sessions
-
-Journals must include an `entities_observed` array listing every entity encountered during the run, each tagged with its relevance:
-
-```json
-{
-  "entities_observed": [
-    { "name": "2026 Solar Eclipse", "type": "Concept/Event", "confidence": "high", "user_relevance": "user" },
-    { "name": "NASA", "type": "Organization", "confidence": "high", "user_relevance": "agent_only" }
-  ]
-}
-```
-
-## Initialization
-
-On first invocation of any Sift command, run `sift.init`:
-
-1. Create `{agent_root}/commons/data/ocas-sift/` and subdirectories (`reports/`)
-2. Write default `config.json` with ConfigBase fields if absent
-3. Create empty JSONL files: `sessions.jsonl`, `threads.jsonl`, `entities.jsonl`, `sources.jsonl`, `decisions.jsonl`, `intents.jsonl`, `evidence.jsonl`
-4. Create `{agent_root}/commons/journals/ocas-sift/`
-5. Ensure journal payload fields (see interfaces specification) exists (create if missing)
-6. Register cron job `sift:update` if not already present (check the platform scheduling registry first)
-7. Log initialization as a DecisionRecord in `decisions.jsonl`
-8. **N2 MCP setup** (run once; skip if `n2-free-search, google-search` MCP already registered):
-   - Check: the platform MCP registry for `n2-free-search, google-search`
-   - If not registered, add to platform MCP config:
-     ```json
-     {
-       "mcpServers": {
-         "n2-free-search, google-search": {
-           "command": "npx",
-           "args": ["-y", "n2-free-search, google-search"]
-         }
-       }
-     }
-     ```
-  - For self-hosted SearXNG, see `references/search_tiers.md` for env var and MCP config setup.
-
-9. **Scrapling setup** (required for `sift.fetch`; run once):
-   ```bash
-   pip install scrapling[fetchers] html2text
-   python3 -c "from scrapling.fetchers import PlaywrightFetcher; PlaywrightFetcher.auto_match_install()"
-   ```
+| File | When to read |
+|---|---|
+| `references/dye-transfer-fabric-guide.md` | When researching dye transfer, color run, or stain removal from clothes — fabric-specific product recommendations |
+| `references/pitfalls.md` | Before research runs; CAPTCHA cascade, answer-from-knowledge trap |
+| `references/search_tiers.md` | Before tier selection or escalation |
+| `references/research-workflow.md` | When executing research sessions from cloud environments |
+| `references/csapi-quota.md` | Before calling `search_custom` — quota tracking |
+| `references/schemas.md` | Before creating sessions, threads, or extraction records |
+| `references/query_rewrite.md` | Before query rewriting |
+| `references/journal.md` | Before sift.journal; at end of every run |
+| `references/mcp-redirect-pattern.md` | The MCP redirect pattern — how phantom tool calls (web_search, web_extract) are intercepted and routed to SearXNG via MCP servers |
+| `references/webwright-integration.md` | Before `sift.webwright` |
+| `references/local-business-search.md` | When searching for local businesses, services, or venues — RapidAPI Places workflow |
 
 ## Background tasks
 
@@ -269,36 +258,18 @@ On first invocation of any Sift command, run `sift.init`:
 |---|---|---|---|
 | `sift:update` | cron | `0 0 * * *` (midnight daily) | `sift.update` |
 
-```
-# Task declared in SKILL.md frontmatter metadata.{platform}.cron
-```
-
 ## Self-update
 
-`sift.update` pulls the latest package from the `source:` URL in this file's frontmatter. Runs silently — no output unless the version changed or an error occurred. Compares local vs remote version via GitHub API, downloads tarball if different, extracts in place. Retries once on failure. Output on success: `I updated Sift from version {old} to {new}`.
+`sift.update` pulls the latest package from GitHub. Runs silently.
 
 ## Visibility
 
 public
 
-## Support file map
+## Optional skill cooperation
 
-| File | When to read |
-|---|---|
-| `references/schemas.md` | Before creating sessions, threads, or extraction records |
-| `references/search_tiers.md` | Before tier selection or escalation |
-| `references/query_rewrite.md` | Before query rewriting |
-| `references/journal.md` | Before sift.journal; at end of every run |
-| `references/research-workflow.md` | When executing research sessions, especially from cloud environments with CAPTCHA/credit issues |
-| `references/pitfalls.md` | Before research runs; when encountering rate limits, auth walls, or cloud IP blocks |
-| `references/webwright-integration.md` | Before `sift.webwright`; when task requires browser interaction |
-
-## Update command
-
-This skill self-updates every 24 hours via:
-
-```bash
-sift.update
-```
-
-This pulls the latest version from GitHub and restarts the skill's background tasks if applicable.
+- Elephas — emit Signal files for Chronicle promotion
+- Thread — may read recent browsing context for query rewriting
+- Weave — may use for entity disambiguation
+- Chronicle — may read for entity context
+- Look — reverse image search capability

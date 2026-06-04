@@ -1,5 +1,6 @@
 ---
 name: ocas-sift
+source: https://github.com/indigokarasu/sift
 description: >-
   Sift: web search, research synthesis, fact verification, entity extraction,
   and URL content extraction. The system's general research engine. Use for ANY

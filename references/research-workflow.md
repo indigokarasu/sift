@@ -82,33 +82,19 @@ When all web search services are credit-limited AND major search engines (Google
 
 Aggregate findings from structured sources to build the profile. Mark confidence levels: "high" for confirmed (direct source match), "med" for inferred (email domain + project association), "low" for unconfirmed (name-only match without verification).
 
-## Tier 2.5: SearXNG local instance (if available)
+## Tier 2.5: SearXNG plugin (preferred over raw curl)
 
-If a SearXNG instance is running locally (e.g., on localhost:8889), it can serve as an unlimited, credit-free search engine with aggregated results from multiple backends (Google, Brave, DuckDuckGo, Startpage, etc.).
+The SearXNG plugin is now a first-class Hermes plugin (`web-searxng`). The `web_search` tool routes to it automatically when `web.backend: searxng` is configured. This is the preferred search path — use `web_search` directly instead of raw curl.
 
-**How to query SearXNG via browser:**
-1. Navigate to `http://localhost:8889/search?q=YOUR+QUERY&format=json`
-2. Parse the JSON response via `browser_console` (`document.body.innerText`)
-3. Results are in the `results` array with `url`, `title`, `content`, `engine`, and `score` fields
-4. Fetch full pages by navigating to result URLs with `browser_navigate`, then extract text with `browser_console` or `browser_snapshot`
+For script-based access or when you need raw JSON:
 
-**Advantages over API-only collection:**
-- Returns aggregated results from multiple search engines simultaneously
-- No API keys or credits needed
-- Supports all query types (not just person/entity lookup)
-- Direct URL extraction makes page fetching easy
-
-**Limitations:**
-- Requires a running SearXNG instance
-- Some engines may be blocked or return access denied from the server's IP
-- Result quality depends on which engines SearXNG can reach
-- No specialized academic/database APIs, just general web search
-
-**Example workflow:**
+```bash
+curl -s "http://localhost:8888/search?q=QUERY&format=json" | python3 -c "
+import json,sys
+d=json.load(sys.stdin)
+for r in d.get('results',[])[:10]:
+    print(r['title']); print(r['url']); print(r['content'][:200]); print()
+"
 ```
-1. browser_navigate → http://localhost:8889/search?q=QUERY&format=json
-2. browser_console → document.body.innerText (parse JSON for top results)
-3. browser_navigate → https://result-url.example.com/page
-4. browser_console → document.querySelector('article,main').innerText
-5. Repeat for additional results or secondary searches
-```
+
+**Configuration:** `hermes config set SEARXNG_URL http://localhost:8888` and `hermes config set web.backend searxng`.

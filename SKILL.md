@@ -1,42 +1,22 @@
 ---
 name: ocas-sift
 source: https://github.com/indigokarasu/sift
-description: >-
-  Sift: web search, research synthesis, fact verification, entity extraction,
-  and URL content extraction. The system's general research engine. Use for ANY
-  task requiring web information: search, research, look up, investigate, find
-  out, check if, fact check, compare, summarize, what is, how to, product
-  recommendations, price checks, current events, or reading a specific URL.
-  TRIGGER ON: any question requiring current web data, any "investigate/find
-  out/check/look into" request, any product/price/recommendation query. Do NOT
-  use browser for search (CAPTCHA'd on VPS). The `web_search` and `web_extract`
-  MCP tools route to SearXNG automatically — for deep research, load this skill
-  directly. Do not use for person-focused OSINT (use Scout) or image
-  processing (use Look).
+description: 'Sift: web search, research synthesis, fact verification, entity extraction,
+  and URL content extraction. The system''s general research engine. Use for ANY task
+  requiring web information: search, research, look up, investigate, find out, check
+  if, fact check, compare, summarize, what is, how to, product recommendations, price
+  checks, current events, or reading a specific URL. TRIGGER ON: any question requiring
+  current web data, any "investigate/find out/check/look into" request, any product/price/recommendation
+  query. Do NOT use browser for search (CAPTCHA''d on VPS). For deep research, load
+  this skill directly. Do not use for person-focused OSINT (use Scout) or image processing
+  (use Look).'
 license: MIT
 includes:
 - references/**
 - scripts/**
 metadata:
   author: Indigo Karasu (indigokarasu)
-  version: 2.9.3
-triggers:
-- web search
-- research synthesis
-- fact verification
-- extract URL content
-- search the web
-- investigate
-- find out
-- check if
-- look into
-- product research
-- price check
-- recommendation
-- current events
-- how to
-- what is
-- compare products
+  version: 2.9.4
 ---
 
 # Sift
@@ -53,8 +33,8 @@ If you answer from domain knowledge without checking current sources, you may mi
 
 **Pattern to follow:**
 1. User asks about a product/recommendation/how-to → load Sift
-2. Run SearXNG: `curl -s "http://localhost:8888/search?q=QUERY&format=json"`
-3. Fetch top result URLs with `curl -sL` or `sift.fetch`
+2. Call `web_search` (routes to SearXNG plugin automatically)
+3. Fetch top result URLs with `sift.fetch`
 4. THEN synthesize answer with citations
 
 **Exception:** Pure factual lookups ("what is the capital of France") that don't require web data can be answered from internal knowledge.
@@ -170,22 +150,25 @@ Users may override with phrases like "quick answer", "deep dive", "compare", or 
 
 ## Search tier selection
 
-All configured search sources fire in parallel. Results are deduplicated by URL and content hash.
+All search sources fire in parallel. Results are deduplicated by URL and content hash.
 
 - **Internal knowledge** — LLM knowledge, conversation context, Chronicle if available. Always runs first as a pre-check.
-- **Free web search (parallel fan-out)** — all of the following fire simultaneously:
-  - **N2 MCP** (`n2_web_search`) — SearXNG-backed, 70+ engines, no API key required. Registered during `sift.init`. Also provides `n2_news_search` for recency-focused queries.
-  - **Brave Search API** — structured web results. See `references/search_tiers.md` for provider configuration and API keys.
-  - **SearXNG** — self-hosted instance on `http://localhost:8888`. **This is the primary search source on VPS environments.** Always returns results when browser-based search is CAPTCHA-blocked.
-  - **Platform search** — agent-reach on Twitter/X (via Mirror Rotator → Search Bridge), Reddit, LinkedIn, GitHub, etc.
-- **Google Custom Search API (CSAPI)** — fallback when free web search returns insufficient results. Uses `mcp_google_workspace_search_custom`. Quota-limited: 1,000 queries/month free tier. Check quota before calling (`csapi_quota.py check`), increment after (`csapi_quota.py increment`).
+- **Free web search** — SearXNG via `web_search` tool (self-hosted metasearch, 70+ engines, no key). This is the default first query for all research.
+- **Platform search** — agent-reach on Twitter/X, Reddit, LinkedIn, GitHub, etc.
 
-For detailed tier-by-tier workflow, API curl examples, and cloud environment fallbacks, read `references/research-workflow.md`.
+For structured API data, delegate to Reach:
+- **Reach sources** — 53 registered APIs (fred, census, sec_edgar, nasa, openalex, courtlistener, etc.). Call `reach.query <source> <action>`.
+- **CSAPI** — Google Custom Search via `reach.csapi_check` / `reach.csapi_increment` / `reach.query csapi`. Reach owns the quota.
+- **RapidAPI** — General-purpose marketplace (146+ APIs: finance, crypto, news, geo, weather, security, social, travel). Call `reach.query rapidapi`. Reach manages the MCP connection and API key. NOTE: RapidAPI is NOT limited to local business search — that's one narrow use case. It's a general marketplace gateway.
+
+Do NOT call `mcp_rapidapi_rapidapi_call` or `mcp_google_workspace_search_custom` directly from Sift. All API access routes through Reach.
 
 ## Quick VPS Search Cheat Sheet
 
 ```bash
-# Primary — SearXNG (localhost:8888, no CAPTCHA)
+# Primary — web_search tool (SearXNG plugin, no CAPTCHA)
+# Just call web_search directly; it routes to SearXNG automatically.
+# For raw access (e.g., from scripts):
 curl -s "http://localhost:8888/search?q=QUERY&format=json" | python3 -c "
 import json,sys
 d=json.load(sys.stdin)
@@ -193,8 +176,9 @@ for r in d.get('results',[])[:10]:
     print(r['title']); print(r['url']); print(r['content'][:200]); print()
 "
 
-# Fallback — CSAPI (check quota first)
-python3 ~/.hermes/skills/ocas-sift/scripts/csapi_quota.py check
+# Fallback — CSAPI (route through Reach for quota management)
+reach.csapi_check
+reach.csapi_increment  # after each CSAPI query
 ```
 
 ## Source reputation model
@@ -233,8 +217,8 @@ Sift writes Signal files to Elephas (via journal signal payload): the `signal` p
 
 Read `references/pitfalls.md` for the full list. Key highlights:
 
-- **Answer-from-knowledge trap:** Don't answer product/how-to questions from training data alone. Use SearXNG + fetch. (See Load-First Rule above.)
-- **CAPTCHA cascade:** From cloud environments, ALL major search engines block headless browsers. Use SearXNG (`localhost:8888`) or CSAPI instead.
+- **Answer-from-knowledge trap:** Don't answer product/how-to questions from training data alone. Use `web_search` + `sift.fetch`. (See Load-First Rule above.)
+- **CAPTCHA cascade:** From cloud environments, ALL major search engines block headless browsers. Use `web_search` (SearXNG plugin) or CSAPI instead.
 - **Credential sanitizer blocks API key writes:** The Hermes output sanitizer intercepts API keys. If CSAPI fails with missing key, the owner must add it manually.
 
 ## Support file map
@@ -242,16 +226,14 @@ Read `references/pitfalls.md` for the full list. Key highlights:
 | File | When to read |
 |---|---|
 | `references/dye-transfer-fabric-guide.md` | When researching dye transfer, color run, or stain removal from clothes — fabric-specific product recommendations |
-| `references/pitfalls.md` | Before research runs; CAPTCHA cascade, answer-from-knowledge trap |
+| `references/pitfalls.md` | Before research runs; CAPTCHA cascade, answer-from-knowledge trap, web_search plugin routing |
 | `references/search_tiers.md` | Before tier selection or escalation |
 | `references/research-workflow.md` | When executing research sessions from cloud environments |
 | `references/csapi-quota.md` | Before calling `search_custom` — quota tracking |
 | `references/schemas.md` | Before creating sessions, threads, or extraction records |
 | `references/query_rewrite.md` | Before query rewriting |
 | `references/journal.md` | Before sift.journal; at end of every run |
-| `references/mcp-redirect-pattern.md` | The MCP redirect pattern — how phantom tool calls (web_search, web_extract) are intercepted and routed to SearXNG via MCP servers |
 | `references/webwright-integration.md` | Before `sift.webwright` |
-| `references/local-business-search.md` | When searching for local businesses, services, or venues — RapidAPI Places workflow |
 
 ## Background tasks
 

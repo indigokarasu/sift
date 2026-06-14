@@ -7,35 +7,27 @@ This file contains provider-specific configuration details including API keys an
 - Set the `BRAVE_SEARCH_API_KEY` environment variable with your Brave API key.
 - Without this key, Brave Search tier is skipped silently.
 
-## SearXNG (Self-Hosted)
+## SearXNG (Plugin)
 
-- Set the `SEARXNG_URL` environment variable (e.g., `http://localhost:8080`).
-- When using N2 MCP with SearXNG, add to platform MCP config:
-  ```json
-  { "env": { "SEARXNG_URL": "http://localhost:8080" } }
-  ```
-- If self-hosted SearXNG responds, skip the N2 MCP SearXNG call to avoid duplicate results.
+SearXNG is a first-class Hermes plugin (`web-searxng`). The `web_search` tool routes to it automatically when `web.backend: searxng` is configured in config.yaml and `SEARXNG_URL` is set in `.env`.
+
+- Set via: `hermes config set SEARXNG_URL http://localhost:8888`
+- Set backend: `hermes config set web.backend searxng`
+- No API key required — the plugin reads `SEARXNG_URL` from the `.env` file at runtime
+- Supports 70+ search engines via metasearch
+- Primary search source on VPS/cloud environments (no CAPTCHA)
 
 ## Google Custom Search API (CSAPI)
 
 - **Provider**: Google Custom Search JSON API
 - **Quota**: Free tier (1000 queries/month)
-- **Use Case**: Fallback when free web search (SearXNG/Brave) returns insufficient results or is unavailable. Does NOT use browser automation — calls the API directly, so it is NOT affected by Google's headless browser / CAPTCHA blocks. Works reliably from datacenter/VPS IPs.
-- **Tool**: `mcp_google_workspace_search_custom` (via google-workspace MCP — already configured)
-- **Open Web Search**: Omit `site_search` parameter to search the entire web. Works identically to a normal Google search for open web queries.
-- **Quota Tracking**: Tracked by `scripts/csapi_quota.py`. Auto-resets on calendar month. Check before calling; increment after each call.
-  - `python3 ~/.hermes/skills/ocas-sift/scripts/csapi_quota.py check` — exit 0 if quota available, 1 if exhausted
-  - `python3 ~/.hermes/skills/ocas-sift/scripts/csapi_quota.py increment` — record one query
-  - `python3 ~/.hermes/skills/ocas-sift/scripts/csapi_quota.py status` — JSON dump of current usage
-  - `python3 ~/.hermes/skills/ocas-sift/scripts/csapi_quota.py remaining` — print queries remaining this month
+- **Use Case**: Fallback when free web search (SearXNG/Brave) returns insufficient results. Does NOT use browser automation — calls the API directly, so it is NOT affected by Google's headless browser / CAPTCHA blocks. Works reliably from datacenter/VPS IPs.
+- **Managed by**: ocas-reach (registered source). Route CSAPI queries through Reach.
+- **Quota Tracking**: Reach owns the quota script at `skills/ocas-reach/scripts/csapi_quota.py`. Call `reach.csapi_check` before querying, `reach.csapi_increment` after each query.
 - **Notes**:
-  - Requires THREE things: (a) OAuth scope `https://www.googleapis.com/auth/cse` on the workspace-mcp token, (b) `GOOGLE_PSE_API_KEY` env var (the GCP Console API key, format `AIza...`), AND (c) `GOOGLE_PSE_ENGINE_ID` env var (the Custom Search Engine ID / `cx` from GCP Console → Programmable Search Engine → your engine → "Search engine ID", format like `012345678901234567890:abcdefghijk`).
-  - ⚠️ The PSE API key and engine ID must be set **manually by the owner** — the agent cannot write them through any tool due to the Hermes credential sanitizer. If CSAPI fails with "GOOGLE_PSE_API_KEY environment variable not set", the owner needs to add it to config.yaml or .env.
-  - ⚠️ The `GOOGLE_PSE_ENGINE_ID` must also be set manually for the same reason.
-  - **Multiple accounts**: The workspace-mcp has been patched (`gsearch/search_tools.py`) to use per-account API keys. Set `GOOGLE_PSE_API_KEY` for the default account (owner) and `GOOGLE_PSE_API_KEY_INDIGO` for the Indigo account. The tool auto-selects based on `user_google_email`. Each account gets its own 1,000 queries/month free tier.
-  - Quota tracking: `scripts/csapi_quota.py` tracks both accounts independently. Run `status all` to see both. The `user_google_email` parameter on `search_custom` determines which account/key/quota is used.
-  - Structured results with title, link, snippet — comparable output to browser scraping.
-  - **DO NOT use the Playwright-based `google-search` MCP** (disabled in config). Google blocks all datacenter IPs via CAPTCHA when using browser automation. CSAPI is the correct replacement.
+  - Requires THREE things: (a) OAuth scope `https://www.googleapis.com/auth/cse` on the workspace-mcp token, (b) `GOOGLE_PSE_API_KEY` env var (the GCP Console API key, format `AIza...`), AND (c) `GOOGLE_PSE_ENGINE_ID` env var (the Custom Search Engine ID).
+  - ⚠️ The PSE API key and engine ID must be set **manually by the owner** — the agent cannot write them through any tool due to the Hermes credential sanitizer.
+  - **Multiple accounts**: The workspace-mcp has been patched to use per-account API keys. Set `GOOGLE_PSE_API_KEY` for the default account (owner) and `GOOGLE_PSE_API_KEY_INDIGO` for the Indigo account. Each account gets its own 1,000 queries/month free tier.
 
 ## Playwright Browser Search (DEPRECATED / DISABLED)
 
@@ -49,10 +41,8 @@ All search sources fire in parallel. Results are deduplicated by URL and content
 
 - **Internal knowledge** — LLM knowledge, conversation context, Chronicle if available. Always runs first.
 - **Free web search (parallel fan-out)**:
-  - **N2 MCP** (`n2_web_search`) — SearXNG-backed, 70+ engines, no API key required.
+  - **`web_search` tool (SearXNG plugin)** — self-hosted metasearch, 70+ engines, no API key. Primary on VPS.
   - **Brave Search API** — structured results (configured via `BRAVE_SEARCH_API_KEY`).
-  - **Google Search API** — structured results (if MCP is registered).
-  - **SearXNG** — self-hosted (configured via `SEARXNG_URL`).
   - **Platform search** — agent-reach on Twitter/X, Reddit, LinkedIn, GitHub, etc.
 - **Semantic research** — Exa, Tavily. Deep research only. Quota-limited (~50 calls/day combined). Runs when standard web search is insufficient.
 

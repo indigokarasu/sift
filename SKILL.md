@@ -1,4 +1,5 @@
 ---
+license: MIT
 name: ocas-sift
 source: https://github.com/indigokarasu/sift
 description: 'Sift: web search, research synthesis, fact verification, entity extraction,
@@ -8,9 +9,13 @@ description: 'Sift: web search, research synthesis, fact verification, entity ex
   checks, current events, or reading a specific URL. TRIGGER ON: any question requiring
   current web data, any "investigate/find out/check/look into" request, any product/price/recommendation
   query. Do NOT use browser for search (CAPTCHA''d on VPS). For deep research, load
-  this skill directly. Do not use for person-focused OSINT (use Scout) or image processing
-  (use Look).'
-license: MIT
+  this skill directly. NOT for: person-focused OSINT (use Scout), image processing (use Look), offline tasks, or general knowledge that does not require web lookup.'
+triggers:
+- web search
+- research
+- fact check
+- URL content extraction
+
 includes:
 - references/**
 - scripts/**
@@ -68,7 +73,7 @@ Specific use cases:
 
 - OSINT investigations on individuals — use Scout
 - Image-to-action processing — use Look
-- Pattern analysis on the knowledge graph — use Corvus
+- Pattern analysis on the knowledge graph — query Chronicle directly
 - Communications and message drafting — use Dispatch
 
 Sift never performs OSINT investigations on individuals. If the primary entity of a query is a person, Scout should be invoked.
@@ -77,7 +82,7 @@ Sift never performs OSINT investigations on individuals. If the primary entity o
 
 Sift owns web research, fact verification, and structured entity extraction.
 
-Sift does not own: person-focused OSINT (Scout), image processing (Look), knowledge graph writes (Elephas), pattern analysis (Corvus), social graph (Weave).
+Sift does not own: person-focused OSINT (Scout), image processing (Look), pattern analysis, social graph (Weave).
 
 ## Ontology types
 
@@ -88,7 +93,7 @@ Sift works with these types from `spec-ocas-ontology.md`:
 - **Concept/Event, Concept/Idea** — events, topics, and themes extracted from research.
 - **Thing/DigitalArtifact** — documents, articles, and digital records.
 
-Sift emits Signals to Elephas for entities and relationships extracted with confidence >= med. Signal `payload.type` is the ontology type of the primary entity. `source_journal_type` is `"Research"`. Every emitted Signal must include a `user_relevance` field.
+Sift includes entity signals in journals for Chronicle ingestion. Signal `payload.type` is the ontology type of the primary entity. `source_journal_type` is `"Research"`. Every emitted Signal must include a `user_relevance` field.
 
 ### user_relevance field
 
@@ -102,7 +107,7 @@ Every Signal emitted by Sift carries a `user_relevance` field with one of two va
 1. The user explicitly requested the search or research (e.g., "search for X", "look up Y", or any direct user prompt that triggered the run), OR
 2. The entity has a demonstrated connection to an entity already in Chronicle with `user_relevance: "user"`.
 
-When in doubt, default to `"agent_only"`. Elephas can promote later if a user connection is established.
+When in doubt, default to `"agent_only"`. Chronicle can promote later if a user connection is established.
 
 Signal example:
 ```json
@@ -135,7 +140,7 @@ Sift may read Thread's active context for query rewriting and Weave's database f
 - `sift.journal` — write journal for the current run; called at end of every run
 - `sift.update` — pull latest from GitHub source; preserves journals and data
 - `sift.fetch [url]` — extract clean Markdown content from a URL. Runs Scrapling first (fast HTTP for static sites, headless browser mode for JS-heavy sites); falls back to Jina Reader (`r.jina.ai/<url>`) if Scrapling output is below content threshold. Returns Markdown with structure preserved. Use for summarizing a specific page or document the user provides.
-- `sift.webwright` — execute an interactive web task using browser automation (Playwright Firefox). Write the plan, exploration screenshots, instrumented final_script.py, execution log, and self-verification into `{agent_root}/commons/data/ocas-sift/webwright/`. For form filling, multi-step flows, JS-heavy sites, interactive filtering, or any task where the browser is the workspace. Read `references/webwright-integration.md` before first use.
+- `sift.webwright` — execute an interactive web task using browser automation (Playwright Firefox). Write the plan, exploration screenshots, instrumented final_script.py, execution log, and self-verification into `{agent_root}/commons/data/ocas-sift/webwright/`. For form filling, multi-step flows, JS-heavy sites, interactive filtering, or any task where the browser is the workspace. Read `references/webwright-integration.md` before first use. Pass `stealth: true` for anti-bot protected sites (triggers fingerprint randomization + challenge wait).
 
 ## Response modes
 
@@ -189,7 +194,7 @@ Sift maintains per-domain trust scores based on: cross-source agreement, contrad
 
 When pages are retrieved, extract: entities (with type from shared ontology), claims, statistics, relationships, citations. Each extraction includes confidence level.
 
-Extracted entities are emitted as enrichment candidates for Elephas.
+Extracted entities are included as enrichment candidates in journal signal payloads for Chronicle ingestion.
 
 ## Run completion
 
@@ -205,20 +210,53 @@ After every Sift command that produces results:
 
 Do not use `sift.fetch` for general search — it fetches a specific known URL only.
 
+## Browsing Escalation Chain
+
+When fetching a URL or performing a web task, anti-bot protections (Cloudflare, Akamai, DataDome, Imperva, PerimeterX) may block the fast path. Use the following escalation chain — each tier is only invoked if the previous one fails or returns insufficient content:
+
+```
+Tier 1: sift.fetch (Scrapling → Jina Reader fallback)
+  ↓ blocked / empty / challenge page detected
+Tier 2: sift.webwright (Playwright Firefox, standard mode)
+  ↓ still blocked / challenge not passing
+Tier 3: sift.webwright with stealth=true (fingerprint randomization, challenge wait, retry)
+  ↓ still blocked
+Mark as unreachable — report to user with evidence.
+```
+
+**Detection signals (auto-escalate when observed):**
+- HTTP 403 response from Scrapling
+- Page title contains "Just a moment…" / "Attention Required" / "Access denied"
+- Body text is < 200 chars but page loads (challenge page)
+- Scrapling returns a Cloudflare/Akamai challenge HTML pattern
+
+**Tier 3 stealth mode** (applied via `sift.webwright` with `stealth: true`):
+- Randomize user-agent, viewport, WebGL vendor, canvas fingerprint
+- Enable stealth plugins (puppeteer-extra-plugin-stealth equivalent)
+- Auto-detect challenge pages and wait for resolution (up to 15s)
+- Retry up to 3 times with exponential backoff
+- If behind proxy, rotate to a residential exit node if available
+
+**Why this order:** Scrapling is near-instant and handles 90% of sites. Webwright Firefox handles JS-heavy sites Scrapling can't parse. Stealth mode is the nuclear option — slower and more expensive, but covers the ~10% of sites that actively block automation.
+
 ## Chronicle interaction
 
 Sift never writes directly to Chronicle. It emits enrichment candidates via Signal files.
 
 ## Inter-skill interfaces
 
-Sift writes Signal files to Elephas (via journal signal payload): the `signal` payload field in the journal entry.
+Sift writes Signal data via journal signal payload: the `signal` payload field in the journal entry.
 
 ## Pitfalls & Tips
+
+Error handling in sift focuses on anti-bot escalation, credential management, and graceful degradation when sources are unreachable. Always have a fallback plan before attempting live web research.
 
 Read `references/pitfalls.md` for the full list. Key highlights:
 
 - **Answer-from-knowledge trap:** Don't answer product/how-to questions from training data alone. Use `web_search` + `sift.fetch`. (See Load-First Rule above.)
 - **CAPTCHA cascade:** From cloud environments, ALL major search engines block headless browsers. Use `web_search` (SearXNG plugin) or CSAPI instead.
+- **Surface-depth trap:** Getting a name/reference is not the same as getting the content. If you can't summarize the actual substance, you're not done. See `references/pitfalls.md` → "Surface-depth trap" section.
+- **Self-calibration trap:** Giving 4/5 when the output "does nothing" is worse than 3/5 — it signals the agent can't distinguish done from not-done. Self-assess against what was *delivered*, not what was *attempted*. See `references/pitfalls.md` → "Self-calibration trap" section.
 - **Credential sanitizer blocks API key writes:** The Hermes output sanitizer intercepts API keys. If CSAPI fails with missing key, the owner must add it manually.
 
 ## Support file map
@@ -233,7 +271,8 @@ Read `references/pitfalls.md` for the full list. Key highlights:
 | `references/schemas.md` | Before creating sessions, threads, or extraction records |
 | `references/query_rewrite.md` | Before query rewriting |
 | `references/journal.md` | Before sift.journal; at end of every run |
-| `references/webwright-integration.md` | Before `sift.webwright` |
+| `references/webwright-integration.md` | Before `sift.webwright` — includes stealth mode configuration |
+| `references/escalation-pattern.md` | When auto-escalation triggers or debugging anti-bot blocks |
 
 ## Background tasks
 
@@ -251,7 +290,6 @@ public
 
 ## Optional skill cooperation
 
-- Elephas — emit Signal files for Chronicle promotion
 - Thread — may read recent browsing context for query rewriting
 - Weave — may use for entity disambiguation
 - Chronicle — may read for entity context

@@ -44,6 +44,55 @@ The `execute_code` tool can be blocked by security policy, even outside cron mod
 
 `mcp_web_search_web_extract` returns 403 on Yelp, Reddit, and many Google pages from VPS IPs. It works on news sites (SFGATE, CBS, local blogs). Always have a fallback plan that doesn't depend on scraping these blocked sources.
 
+## Anti-bot escalation
+
+When fetching URLs from VPS/cloud IPs, anti-bot systems (Cloudflare, Akamai, DataDome, Imperva) will block fast HTTP clients. Follow the escalation chain:
+
+1. `sift.fetch` (Scrapling → Jina) — handles 90% of sites, near-instant
+2. `sift.webwright` (Playwright Firefox) — handles JS-heavy sites
+3. `sift.webwright` with `stealth: true` — fingerprint randomization + challenge wait, for protected sites
+
+Auto-escalate when: HTTP 403, "Just a moment…" title, body < 200 chars on a loaded page, or challenge HTML detected. See "Browsing Escalation Chain" section in SKILL.md for full details.
+
+## Surface-depth trap ("try harder" pattern)
+
+When researching a topic, getting a name/reference is step 1 — not the deliverable. owner's "try harder, not sure how you gave yourself a 4/5" (2026-06-24) was triggered by: searching manualslib, getting only a name, presenting it as if the research was done.
+
+**The rule:** If you can't answer "what does the content actually say?" after a search, you haven't finished researching.
+
+### Detection signals
+- You're about to report a result that is a title/name only, without substance
+- Your self-assessment score is high but the output is one page or one reference
+- The user asked for "exhaustive" or "the full content" and you returned a pointer
+
+### Fix
+1. Before reporting, ask: "Can I summarize the actual content in detail?"
+2. If not, fetch more sources, read deeper pages, extract the substance
+3. A 4/5 self-assessment on surface research is a red flag — re-evaluate against "what would a human expert on this topic know?"
+
+### When this applies
+- Manual/library research (finding a manual is not reading it)
+- Document retrieval (getting the filename is not getting the content)
+- Any research where the user needs the *substance*, not the *location* of substance
+
+## Self-calibration trap ("try harder" ≠ self-score)
+
+After completing a task, the agent self-scores against a rubric. If the self-score is high but the output is thin (one reference, surface-level content, "does nothing"), the calibration is wrong.
+
+**Root cause:** The agent conflates "I tried" with "I delivered." Effort is not output.
+
+**The rule:** Self-assess against what was *delivered*, not what was *attempted*.
+- "Found a name" ≠ "Researched the topic"
+- "Ran the script" ≠ "Verified the fix"
+- "Searched for X" ≠ "Answered the question about X"
+
+**Calibration check before reporting a score:**
+1. What did the user actually receive?
+2. Would a human expert consider this complete?
+3. If I gave this to owner as-is, would he say "that's it?" — if yes, the score is too high.
+
+**Anti-pattern:** Giving 4/5 when the output "does nothing" is worse than giving 3/5 — it signals the agent can't distinguish done from not-done. (2026-06-24, triggered by learn skill self-scoring 4/5 on surface-level manual search that returned only a name.)
+
 ## Credential sanitizer blocks API key writes
 
 The Hermes output sanitizer intercepts API keys. If CSAPI fails with missing key, the owner must add it manually.

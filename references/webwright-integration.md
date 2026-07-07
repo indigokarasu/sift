@@ -89,6 +89,19 @@ original task but the user can re-run with different args later.
 - Each run launches a fresh browser — no persistent state
 - Akamai-protected sites that reject Chromium work under Firefox
 
+## Stealth mode
+
+When `stealth: true` is passed to `sift.webwright`, apply these additional configurations:
+
+- **Fingerprint randomization**: Override `navigator.webdriver`, `navigator.plugins`, `navigator.languages`, WebGL vendor/renderer strings, canvas noise
+- **Stealth user-agent**: Rotate among recent Chrome/Firefox user-agents from a pool
+- **Challenge detection**: After page load, check for Cloudflare/Akamai/Datadome challenge patterns (title contains "Just a moment", "Attention Required", "Access denied", or body < 200 chars with challenge HTML)
+- **Auto-wait**: If challenge detected, poll every 2s until resolved (max 15s)
+- **Retry with backoff**: On failure, retry up to 3 times (2s, 4s, 8s)
+- **Proxy rotation**: If `PROXY_URL` is set, use it; if multiple proxies available, rotate on retry
+
+Stealth mode adds 3-20s per request but dramatically increases success rate on protected sites. Use only when standard Webwright fails — it is not the default path.
+
 ## Safety rules
 
 - Never install extra pip/apt packages

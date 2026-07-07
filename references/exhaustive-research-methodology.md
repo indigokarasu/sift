@@ -18,5 +18,15 @@ When tasked with synthesizing or auditing a large collection of files (design sy
 - "Read 5 of 72 brand files" → WRONG
 - "Read all 272+ files and found 9 universal sections" → CORRECT
 
+### Web Research Depth
+
+Same principle applies to web research. Getting a page title or result snippet is not reading the page.
+
+- "Found the manual name from manualslib" → WRONG (that's a pointer, not content)
+- "Read the first result and summarized it" → Only correct if user asked for summary
+- "Fetched 5+ pages, extracted full content, synthesized substance" → CORRECT for "exhaustive" requests
+
+**Self-check before reporting:** Can I answer a detailed question about the source's actual content? If not, fetch more.
+
 ### For Very Large Collections (1000+ files)
 Use `search_files` with targeted regex to find patterns across the full set without reading every file end-to-end. But always sample from ALL categories/sections.

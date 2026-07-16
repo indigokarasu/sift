@@ -22,6 +22,13 @@ includes:
 metadata:
   author: Indigo Karasu (indigokarasu)
   version: 2.9.4
+  hermes:
+    category: research
+    tags:
+    - web-search
+    - research-synthesis
+    - fact-verification
+    - OCAS-core
 ---
 
 # Sift
@@ -37,10 +44,10 @@ Sift is the system's general research engine, retrieving and synthesizing inform
 If you answer from domain knowledge without checking current sources, you may miss: product availability changes, new products on the market, updated formulations, price changes, or critical caveats (e.g., fabric-specific limitations like synthetic vs. cotton).
 
 **Pattern to follow:**
-1. User asks about a product/recommendation/how-to → load Sift
-2. Call `web_search` (routes to SearXNG plugin automatically)
-3. Fetch top result URLs with `sift.fetch`
-4. THEN synthesize answer with citations
+- [ ] User asks about a product/recommendation/how-to → load Sift
+- [ ] Call `web_search` (routes to SearXNG plugin automatically)
+- [ ] Fetch top result URLs with `sift.fetch`
+- [ ] THEN synthesize answer with citations
 
 **Exception:** Pure factual lookups ("what is the capital of France") that don't require web data can be answered from internal knowledge.
 
@@ -200,9 +207,9 @@ Extracted entities are included as enrichment candidates in journal signal paylo
 
 After every Sift command that produces results:
 
-1. Persist session, entities, sources, and decisions to local JSONL files
-2. For each extracted entity or relationship with confidence >= `med`: write a Signal file to the `signal` payload field in the journal entry. Use Signal schema from `spec-ocas-shared-schemas.md`. Every Signal must include `user_relevance` (see Ontology types section). Set `"user"` if the run was user-initiated or the entity connects to a `user_relevance: "user"` Chronicle entry; otherwise `"agent_only"`.
-3. Write journal via `sift.journal`
+- [ ] Persist session, entities, sources, and decisions to local JSONL files
+- [ ] For each extracted entity or relationship with confidence >= `med`: write a Signal file to the `signal` payload field in the journal entry. Use Signal schema from `spec-ocas-shared-schemas.md`. Every Signal must include `user_relevance` (see Ontology types section). Set `"user"` if the run was user-initiated or the entity connects to a `user_relevance: "user"` Chronicle entry; otherwise `"agent_only"`.
+- [ ] Write journal via `sift.journal`
 
 ## sift.fetch behavior
 

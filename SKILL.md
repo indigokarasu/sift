@@ -274,6 +274,7 @@ Read `references/pitfalls.md` for the full list. Key highlights:
 | `references/pitfalls.md` | Before research runs; CAPTCHA cascade, answer-from-knowledge trap, web_search plugin routing |
 | `references/search_tiers.md` | Before tier selection or escalation |
 | `references/research-workflow.md` | When executing research sessions from cloud environments |
+| `references/ddg_html_fallback.md` | When `web_search` returns an empty `results` array (SearXNG degraded) — manual DuckDuckGo HTML + urllib discovery/read fallback |
 | `references/csapi-quota.md` | Before calling `search_custom` — quota tracking |
 | `references/schemas.md` | Before creating sessions, threads, or extraction records |
 | `references/query_rewrite.md` | Before query rewriting |

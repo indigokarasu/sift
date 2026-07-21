@@ -1,7 +1,7 @@
 # sift
 
 <p align="center">
-<img src="./assets/readme/hero.svg" width="100%" alt="Sift: research synthesis engine — retrieves, verifies, and synthesizes information from the web with source reliability scoring.">
+<img src="./assets/readme/hero.jpg" width="100%" alt="Sift: research synthesis engine — retrieves, verifies, and synthesizes information from the web with source reliability scoring.">
 </p>
 
 sift — Sift: research synthesis engine — retrieves, verifies, and synthesizes information from the web with source reliability scoring.

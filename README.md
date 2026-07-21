@@ -1,24 +1,12 @@
 # sift
 
 <p align="center">
-<img src="./assets/readme/hero.jpg" width="100%" alt="Sift: research synthesis engine — retrieves, verifies, and synthesizes information from the web with source reliability scoring.">
+  <img src="./assets/readme/hero.jpg" width="100%" alt="Sift: research synthesis engine — retrieves, verifies, and synthesizes web information with source reliability scoring">
 </p>
 
-sift — Sift: research synthesis engine — retrieves, verifies, and synthesizes information from the web with source reliability scoring.
+Sift selects search depth automatically from quick answer to deep research, routes queries through a tiered source hierarchy, and evaluates reliability through cross-source agreement scoring. It never performs person-focused OSINT — those requests belong with Scout.
 
-
-> Tell it what you need. It does the work.
-
-## What it does
-
-Sift selects search depth automatically (quick answer, comparison, deep research, or document analysis), routes queries through a tiered source hierarchy from internal knowledge to semantic research providers, and evaluates reliability through cross-source agreement scoring. It never performs person-focused OSINT — those requests belong with Scout.
-
-## Dependencies
-
-- [Elephas](https://github.com/indigokarasu/elephas) — receives Signal files for Chronicle
-- [Weave](https://github.com/indigokarasu/weave) — entity disambiguation
-- Brave Search API, SearXNG, DuckDuckGo, Exa, Tavily
-
----
-
-*sift is part of the [OCAS Agent Suite](https://github.com/indigokarasu).*
+**Capabilities:**
+- Depth selection: quick answer, comparison, deep research, document analysis
+- Source hierarchy: internal knowledge, web search, semantic providers
+- Reliability scoring via cross-source agreement

@@ -146,7 +146,7 @@ Sift may read Thread's active context for query rewriting and Weave's database f
 - `sift.status` — return current state: active threads, quota usage, source reputation summary
 - `sift.journal` — write journal for the current run; called at end of every run
 - `sift.update` — pull latest from GitHub source; preserves journals and data
-- `sift.fetch [url]` — extract clean Markdown content from a URL. Runs Scrapling first (fast HTTP for static sites, headless browser mode for JS-heavy sites); falls back to Jina Reader (`r.jina.ai/<url>`) if Scrapling output is below content threshold. Returns Markdown with structure preserved. Use for summarizing a specific page or document the user provides.
+- `sift.fetch [url]` — extract clean Markdown content from a URL. Runs Scrapling first (fast HTTP for static sites, headless browser mode for JS-heavy sites); falls back to Jina Reader (`r.jina.ai/<url>`) if Scrapling output is below content threshold. On a confirmed hard-block (404/410/451 or bot/auth wall), optionally recovers the closest Internet Archive snapshot via `scripts/wayback_fallback.py` (archived, not live — envelope marked `source='archive.org'`, `is_stale=True`). Returns Markdown with structure preserved. Use for summarizing a specific page or document the user provides.
 - `sift.webwright` — execute an interactive web task using browser automation (Playwright Firefox). Write the plan, exploration screenshots, instrumented final_script.py, execution log, and self-verification into `{agent_root}/commons/data/ocas-sift/webwright/`. For form filling, multi-step flows, JS-heavy sites, interactive filtering, or any task where the browser is the workspace. Read `references/webwright-integration.md` before first use. Pass `stealth: true` for anti-bot protected sites (triggers fingerprint randomization + challenge wait).
 
 ## Response modes
@@ -227,7 +227,10 @@ Tier 1: sift.fetch (Scrapling → Jina Reader fallback)
 Tier 2: sift.webwright (Playwright Firefox, standard mode)
   ↓ still blocked / challenge not passing
 Tier 3: sift.webwright with stealth=true (fingerprint randomization, challenge wait, retry)
-  ↓ still blocked
+  ↓ still blocked on a CONFIRMED HARD-BLOCK (404/410/451 or bot/auth wall)
+Tier 4: Wayback fallback (scripts/wayback_fallback.py) — recover closest
+         archive.org snapshot; marked source='archive.org', is_stale=True
+  ↓ no usable snapshot
 Mark as unreachable — report to user with evidence.
 ```
 
@@ -262,9 +265,11 @@ Read `references/pitfalls.md` for the full list. Key highlights:
 
 - **Answer-from-knowledge trap:** Don't answer product/how-to questions from training data alone. Use `web_search` + `sift.fetch`. (See Load-First Rule above.)
 - **CAPTCHA cascade:** From cloud environments, ALL major search engines block headless browsers. Use `web_search` (SearXNG plugin) or CSAPI instead.
+- **Degraded-search → go direct to primary sources:** If `web_search` returns an empty `results` array AND `web_extract` errors (backend down), stop retrying search/browser. Direct HTTP endpoints usually still work: SEC EDGAR submissions API (ticker→CIK via `company_tickers.json`, then `data.sec.gov/submissions/CIK{cik}.json` for filing dates + 8-K item types), Google News RSS (`news.google.com/rss/search`), and Jina Reader (`r.jina.ai/<url>`) for clean markdown. See `references/primary_source_research.md`.
 - **Surface-depth trap:** Getting a name/reference is not the same as getting the content. If you can't summarize the actual substance, you're not done. See `references/pitfalls.md` → "Surface-depth trap" section.
 - **Self-calibration trap:** Giving 4/5 when the output "does nothing" is worse than 3/5 — it signals the agent can't distinguish done from not-done. Self-assess against what was *delivered*, not what was *attempted*. See `references/pitfalls.md` → "Self-calibration trap" section.
 - **Credential sanitizer blocks API key writes:** The Hermes output sanitizer intercepts API keys. If CSAPI fails with missing key, the owner must add it manually.
+- **Premise-staleness trap:** A "port X from repo Y" request can target a capability already removed (README/tree lag the code). Verify the current default branch + CHANGELOG + that the module still exists before planning. See `references/pitfalls.md` → "Premise-staleness trap" section.
 
 ## Support file map
 
@@ -275,12 +280,14 @@ Read `references/pitfalls.md` for the full list. Key highlights:
 | `references/search_tiers.md` | Before tier selection or escalation |
 | `references/research-workflow.md` | When executing research sessions from cloud environments |
 | `references/ddg_html_fallback.md` | When `web_search` returns an empty `results` array (SearXNG degraded) — manual DuckDuckGo HTML + urllib discovery/read fallback |
+| `references/primary_source_research.md` | When search engines (SearXNG/DDG/Bing) AND `web_extract` are all degraded — direct primary-source endpoints (SEC EDGAR API, Google News RSS, Jina Reader) that survive search-layer outages |
 | `references/csapi-quota.md` | Before calling `search_custom` — quota tracking |
 | `references/schemas.md` | Before creating sessions, threads, or extraction records |
 | `references/query_rewrite.md` | Before query rewriting |
 | `references/journal.md` | Before sift.journal; at end of every run |
 | `references/webwright-integration.md` | Before `sift.webwright` — includes stealth mode configuration |
 | `references/escalation-pattern.md` | When auto-escalation triggers or debugging anti-bot blocks |
+| `references/wayback_fallback.md` | When `sift.fetch` hits a confirmed hard-block and may recover the dead URL from the Internet Archive |
 
 ## Background tasks
 

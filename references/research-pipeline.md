@@ -6,7 +6,7 @@ Sift maintains per-domain trust scores based on: cross-source agreement, contrad
 
 When pages are retrieved, extract: entities (with type from shared ontology), claims, statistics, relationships, citations. Each extraction includes confidence level.
 
-Extracted entities are emitted as enrichment candidates for Elephas.
+Extracted entities are emitted as enrichment candidates for See references/integration-notes.md for current backend architecture..
 
 ## Run completion
 

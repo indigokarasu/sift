@@ -43,7 +43,7 @@ Sift selects search depth automatically (quick answer, comparison, deep research
 
 ## Dependencies
 
-- [Elephas](https://github.com/indigokarasu/elephas) — receives Signal files for Chronicle
+- See `references/integration-notes.md` for the current backend architecture.
 - [Weave](https://github.com/indigokarasu/weave) — entity disambiguation
 - Brave Search API, SearXNG, DuckDuckGo, Exa, Tavily
 

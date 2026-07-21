@@ -97,6 +97,24 @@ After completing a task, the agent self-scores against a rubric. If the self-sco
 
 The Hermes output sanitizer intercepts API keys. If CSAPI fails with missing key, the owner must add it manually.
 
+## Premise-staleness trap (verify current state before planning a "port X from repo Y" task)
+
+When a user points at an external repo/tool and says "borrow/port/reuse X from it," the advertised capability may no longer exist. READMEs and top-level descriptions lag the code, and a tree can hold stale references to a removed feature — sometimes even a now-broken import — while the real module is gone.
+
+**Triggered:** 2026-07-20 — user pointed at `dondai1234/master-fetch` ("Hound") to pull its "internet archive parts" into ocas-sift. The Internet Archive fallback had been REMOVED that same day in v10.4.1 (CHANGELOG + deleted `archive.py`); the README still advertised the tool broadly, and `server.py`/`cache.py` still referenced `source='archive.org'` while `scripts/live_archive_check.py` had a broken `from master_fetch.archive import ...` import. The literal request was impossible without recovering deleted code from git history.
+
+**The rule:** Before adopting any "pull X from repo Y" request, verify the capability still exists in the CURRENT default branch:
+1. Get the real default branch first (`gh api repos/<owner>/<repo>` → `default_branch`); a guessed branch (e.g. `main`) returns 404 while `master` is the real one.
+2. Read the CHANGELOG / recent commits for removals or renames.
+3. Confirm the module/command/file actually exists in the tree (`ls`/search), not just that the name appears in prose or stale references.
+
+**Why it matters:** Planning against a removed capability wastes a turn and can lead you to reconstruct deleted code. State the finding (with evidence) and offer the durable alternative — here, writing a fresh minimal fallback scoped around the reasons the original was removed — rather than silently proceeding on a stale premise.
+
+**Detection signals:**
+- You're about to "port" a feature but can't find its module in the current tree
+- The repo description advertises something its CHANGELOG says was deleted
+- Stale references to the feature remain in code that no longer compiles against it
+
 ## Git pull fails with untracked file conflicts
 
 When running `sift.update` (or manually pulling updates on a hub-installed skill), `git pull` may abort with:

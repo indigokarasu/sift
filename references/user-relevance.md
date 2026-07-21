@@ -10,7 +10,7 @@ Every Signal emitted by Sift carries a `user_relevance` field with one of two va
 1. The user explicitly requested the search or research (e.g., "search for X", "look up Y", or any direct user prompt that triggered the run), OR
 2. The entity has a demonstrated connection to an entity already in Chronicle with `user_relevance: "user"`.
 
-When in doubt, default to `"agent_only"`. Elephas can promote later if a user connection is established.
+When in doubt, default to `"agent_only"`. See references/integration-notes.md for current backend architecture. can promote later if a user connection is established.
 
 Signal example:
 ```json

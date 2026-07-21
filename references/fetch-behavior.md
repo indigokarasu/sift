@@ -8,6 +8,10 @@
 3. **Jina Reader** — fallback at `https://r.jina.ai/<url>`. Free tier: 200 requests/day. Skipped for platforms where it performs poorly (WeChat, Zhihu, Juejin, CSDN).
 4. **Fail cleanly** — if both methods fail, return a clear error message. No silent empty result. No retry.
 
+**Recovery tier (optional, final):** if the failure is a *confirmed hard-block* (page-gone `404`/`410`/`451`, or a bot/auth wall where live is genuinely impossible), attempt Internet Archive recovery before giving up:
+
+5. **Wayback fallback** — `python3 scripts/wayback_fallback.py <url>` (see `references/wayback_fallback.md`). DO NOT fire on soft `429`/`5xx` where a retry could still recover live. The archive is **archived, not live**: the returned envelope forces `source='archive.org'`, `archived_at`, `content_age_days`, and `is_stale=True` so synthesis and fact-verify never mistake a stale snapshot for current content. Hard 8s timeout; never hangs the chain. If no usable snapshot exists, fall through to the clean error.
+
 Default output: Markdown with headings, links, lists, code blocks, and blockquotes preserved. Pass `--json` for metadata output (url, mode used, content length).
 
 Do not use `sift.fetch` for general search — it fetches a specific known URL only.

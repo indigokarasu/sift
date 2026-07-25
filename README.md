@@ -44,7 +44,7 @@ Sift selects search depth automatically (quick answer, comparison, deep research
 ## Dependencies
 
 - See `references/integration-notes.md` for the current backend architecture.
-- [Weave](https://github.com/indigokarasu/weave) — entity disambiguation
+- [Weave](https://github.com/<agent-handle>/weave) — entity disambiguation
 - Brave Search API, SearXNG, DuckDuckGo, Exa, Tavily
 
 ## Scheduled Tasks
@@ -66,4 +66,4 @@ Sift selects search depth automatically (quick answer, comparison, deep research
 
 ---
 
-*Sift is part of the [OCAS Agent Suite](https://github.com/indigokarasu).*
+*Sift is part of the [OCAS Agent Suite](https://github.com/<agent-handle>).*

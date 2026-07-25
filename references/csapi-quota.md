@@ -9,15 +9,15 @@ Google Custom Search API (CSAPI) is a fallback search tier in Sift, used when fr
 1. **OAuth scope** `https://www.googleapis.com/auth/cse` on the workspace-mcp token for each account.
 2. **`GOOGLE_PSE_API_KEY`** — GCP Console API key. **Must be set manually** (agent cannot write it — credential sanitizer).
 3. **`GOOGLE_PSE_ENGINE_ID`** — Custom Search Engine ID (`cx` from Programmable Search Engine settings). **Must be set manually**.
-4. Optional: `GOOGLE_PSE_API_KEY_INDIGO` — separate key for the Indigo account (separate 1,000 queries/month quota).
+4. Optional: `GOOGLE_PSE_API_KEY_INDIGO` — separate key for the the agent account (separate 1,000 queries/month quota).
 
 ⚠️ If `search_custom` fails with "GOOGLE_PSE_API_KEY environment variable not set" or "GOOGLE_PSE_ENGINE_ID environment variable not set", the owner must add these to config.yaml. The agent cannot write them through any tool.
 
 ## Multi-Account
 
 Two accounts are configured. The `gsearch/search_tools.py` has been patched to auto-select the API key based on `user_google_email`:
-- `google-workspace-user` → uses `GOOGLE_PSE_API_KEY`
-- `mx.indigo.karasu@gmail.com` → uses `GOOGLE_PSE_API_KEY_INDIGO` (falls back to `GOOGLE_PSE_API_KEY` if not set)
+- `<user-google-email>` → uses `GOOGLE_PSE_API_KEY`
+- `<agent-email>` → uses `GOOGLE_PSE_API_KEY_INDIGO` (falls back to `GOOGLE_PSE_API_KEY` if not set)
 
 ## Quota
 

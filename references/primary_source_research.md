@@ -9,7 +9,7 @@ Step A — ticker → CIK (10-digit, zero-padded):
 ```python
 import json, urllib.request
 # SEC requires a descriptive User-Agent or it 403s
-H = {"User-Agent": "Indigo Karasu contact@example.com"}
+H = {"User-Agent": "<agent-name> <agent-handle>@gmail.com"}
 d = json.loads(urllib.request.urlopen(
     urllib.request.Request("https://www.sec.gov/files/company_tickers.json", headers=H),
     timeout=30).read())

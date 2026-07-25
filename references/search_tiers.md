@@ -27,7 +27,7 @@ SearXNG is a first-class Hermes plugin (`web-searxng`). The `web_search` tool ro
 - **Notes**:
   - Requires THREE things: (a) OAuth scope `https://www.googleapis.com/auth/cse` on the workspace-mcp token, (b) `GOOGLE_PSE_API_KEY` env var (the GCP Console API key, format `AIza...`), AND (c) `GOOGLE_PSE_ENGINE_ID` env var (the Custom Search Engine ID).
   - ⚠️ The PSE API key and engine ID must be set **manually by the owner** — the agent cannot write them through any tool due to the Hermes credential sanitizer.
-  - **Multiple accounts**: The workspace-mcp has been patched to use per-account API keys. Set `GOOGLE_PSE_API_KEY` for the default account (owner) and `GOOGLE_PSE_API_KEY_INDIGO` for the Indigo account. Each account gets its own 1,000 queries/month free tier.
+  - **Multiple accounts**: The workspace-mcp has been patched to use per-account API keys. Set `GOOGLE_PSE_API_KEY` for the default account (<operator>) and `GOOGLE_PSE_API_KEY_INDIGO` for the the agent account. Each account gets its own 1,000 queries/month free tier.
 
 ## Playwright Browser Search (DEPRECATED / DISABLED)
 

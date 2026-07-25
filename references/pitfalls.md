@@ -56,7 +56,7 @@ Auto-escalate when: HTTP 403, "Just a moment…" title, body < 200 chars on a lo
 
 ## Surface-depth trap ("try harder" pattern)
 
-When researching a topic, getting a name/reference is step 1 — not the deliverable. owner's "try harder, not sure how you gave yourself a 4/5" (2026-06-24) was triggered by: searching manualslib, getting only a name, presenting it as if the research was done.
+When researching a topic, getting a name/reference is step 1 — not the deliverable. <operator>'s "try harder, not sure how you gave yourself a 4/5" (2026-06-24) was triggered by: searching manualslib, getting only a name, presenting it as if the research was done.
 
 **The rule:** If you can't answer "what does the content actually say?" after a search, you haven't finished researching.
 
@@ -89,7 +89,7 @@ After completing a task, the agent self-scores against a rubric. If the self-sco
 **Calibration check before reporting a score:**
 1. What did the user actually receive?
 2. Would a human expert consider this complete?
-3. If I gave this to owner as-is, would he say "that's it?" — if yes, the score is too high.
+3. If I gave this to <operator> as-is, would he say "that's it?" — if yes, the score is too high.
 
 **Anti-pattern:** Giving 4/5 when the output "does nothing" is worse than giving 3/5 — it signals the agent can't distinguish done from not-done. (2026-06-24, triggered by learn skill self-scoring 4/5 on surface-level manual search that returned only a name.)
 

@@ -1,7 +1,7 @@
 ---
 license: MIT
 name: ocas-sift
-source: https://github.com/indigokarasu/sift
+source: https://github.com/<agent-handle>/sift
 description: 'Sift: web search, research synthesis, fact verification, entity extraction,
   and URL content extraction. The system''s general research engine. Use for ANY task
   requiring web information: search, research, look up, investigate, find out, check

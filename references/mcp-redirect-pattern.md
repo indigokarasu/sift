@@ -8,7 +8,7 @@ Register an MCP server with the same name as the phantom tool. When the agent ca
 
 ## Implementation
 
-### Server: `<hermes-root>/scripts/web_search_redirect.py`
+### Server: `<hermes-home>/scripts/web_search_redirect.py`
 
 An MCP server registered in `config.yaml` as `mcp_servers.web_search`:
 
@@ -16,7 +16,7 @@ An MCP server registered in `config.yaml` as `mcp_servers.web_search`:
 web_search:
   command: python3
   args:
-    - <hermes-root>/scripts/web_search_redirect.py
+    - <hermes-home>/scripts/web_search_redirect.py
   connect_timeout: 10
   enabled: true
   timeout: 30
@@ -42,6 +42,6 @@ This technique is generalizable: whenever the agent consistently reaches for a t
 This is more reliable than trying to change the model's tool-call behavior through prompt/SKILL.md text alone.
 
 ## Related Files
-- Script: `<hermes-root>/scripts/web_search_redirect.py`
-- Config: `mcp_servers.web_search` in `<hermes-root>/config.yaml`
+- Script: `<hermes-home>/scripts/web_search_redirect.py`
+- Config: `mcp_servers.web_search` in `<hermes-home>/config.yaml`
 - SearXNG: `http://localhost:8888` (must be running)

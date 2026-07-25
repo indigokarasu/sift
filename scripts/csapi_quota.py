@@ -6,7 +6,7 @@ Free tier: 1,000 queries/month per Google account.
 State persisted to ~/.hermes/commons/data/ocas-sift/csapi_quota.json.
 
 Accounts:
-  owner   -> owner's GOOGLE_PSE_API_KEY
+  owner   -> the operator's GOOGLE_PSE_API_KEY
   indigo  -> Indigo's GOOGLE_PSE_API_KEY_INDIGO
 
 Usage:

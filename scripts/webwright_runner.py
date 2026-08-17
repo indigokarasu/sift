@@ -57,6 +57,7 @@ def generate_exploration_script(start_url: str, workspace: Path) -> str:
     # instead, so the emitted script may contain arbitrary Python.
     template = r"""
 import asyncio
+import sys
 from pathlib import Path
 from playwright.async_api import async_playwright
 
@@ -74,14 +75,67 @@ async def explore():
             headless=True, channel="chrome", args=["--no-sandbox"])
         ctx = await browser.new_context(viewport={"width": 1280, "height": 1800})
         page = await ctx.new_page()
-        await page.goto("__START_URL__", wait_until="domcontentloaded")
+        await page.goto("__START_URL__", wait_until="load")
+
+        # "domcontentloaded" plus an immediate screenshot captured an unpainted
+        # page: the image came back a single flat colour and the ARIA snapshot
+        # empty, while the run still reported ready. Wait for the network to
+        # settle and for the body to actually carry content before capturing.
+        try:
+            await page.wait_for_load_state("networkidle", timeout=15000)
+        except Exception:
+            pass  # a page that never goes idle can still be perfectly usable
+
+        painted = True
+        try:
+            await page.wait_for_function(
+                "() => document.body && "
+                "document.body.innerText.trim().length > 50",
+                timeout=15000)
+        except Exception:
+            painted = False
+
         SCREENSHOTS.mkdir(parents=True, exist_ok=True)
         await page.screenshot(path=str(SCREENSHOTS / "explore_1_start.png"))
         print("URL:", page.url)
-        print("TITLE:", await page.title())
+        page_title = await page.title()
+        print("TITLE:", page_title)
         snap = await page.locator("body").aria_snapshot()
         print("ARIA:", snap[:2000])
+
+        # The authoring phase reads this snapshot to find selectors, so an empty
+        # one means there is nothing to author against, no matter how healthy
+        # the title looks. Fail loudly rather than hand downstream an empty
+        # snapshot and a blank screenshot.
+        body_chars = len((snap or "").strip())
+        print(f"RENDERED: aria_chars={body_chars} painted={painted}")
         await browser.close()
+
+        if not painted or body_chars == 0:
+            print("EXPLORE_FAILED: the page never rendered content "
+                  "(blank screenshot, empty ARIA snapshot). The URL may be "
+                  "CAPTCHA-gated, bot-blocked, or require interaction before "
+                  "it paints.", file=sys.stderr)
+            sys.exit(1)
+
+        # A bot-check interstitial paints, so the test above passes it. Require a
+        # marker AND an implausibly thin page: a page legitimately about CAPTCHAs
+        # would match the marker but carry real content. Measured on this host,
+        # google.com/search yields 392 ARIA chars behind a reCAPTCHA while
+        # bing.com yields 44652.
+        MARKERS = ("unusual traffic", "recaptcha", "captcha",
+                   "are you a robot", "verify you are human",
+                   "enable javascript and cookies")
+        low = (snap or "").lower() + " " + page_title.lower()
+        hit = [m for m in MARKERS if m in low]
+        if hit and body_chars < 2000:
+            print(f"EXPLORE_BLOCKED: bot-check interstitial detected "
+                  f"({', '.join(hit)}) on a page with only {body_chars} ARIA "
+                  f"characters. This is a challenge page, not the content — "
+                  f"authoring against it would produce a scraper for the "
+                  f"CAPTCHA. Use SearXNG (localhost:8888) or CSAPI for search, "
+                  f"or a start URL that is not bot-gated.", file=sys.stderr)
+            sys.exit(1)
 
 asyncio.run(explore())
 """
@@ -128,8 +182,14 @@ def verify_run(ws: Path, run_dir: Path, critical_points: list[str]) -> dict:
 def main():
     parser = argparse.ArgumentParser(description="Webwright runner for Sift")
     parser.add_argument("task", help="Task description")
-    parser.add_argument("--start-url", default="https://www.google.com",
-                       help="Starting URL")
+    # Google was the default, but /search serves an "unusual traffic"
+    # reCAPTCHA from datacenter IPs and returns no results at all, so the
+    # default start URL could never complete a run. Bing answers the same
+    # queries from this host.
+    parser.add_argument("--start-url", default="https://www.bing.com",
+                       help="Starting URL (default: Bing — Google's "
+                            "results page is CAPTCHA-gated from "
+                            "datacenter IPs)")
     parser.add_argument("--workspace", default=None,
                        help="Custom workspace path")
     parser.add_argument("--craft", action="store_true",
@@ -183,8 +243,8 @@ def main():
     explore_ok = (rc == 0)
     if not explore_ok:
         print(f"[Webwright] Exploration FAILED (exit {rc}). "
-              f"No screenshots were captured, so nothing downstream can be "
-              f"verified against them.", file=sys.stderr)
+              f"No usable screenshot or ARIA snapshot was produced, so nothing "
+              f"downstream can be verified against them.", file=sys.stderr)
         if "No module named 'playwright'" in (stderr or ""):
             print("[Webwright] Cause: Playwright is not installed in this "
                   "interpreter. Install it and its browser before rerunning:\n"

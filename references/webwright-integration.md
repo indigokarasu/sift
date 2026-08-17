@@ -1,5 +1,14 @@
 # Webwright Integration — SearchX Stack
 
+## Prerequisites
+
+- `playwright` installed in the interpreter that runs the skill
+  (`pip install playwright`). It was never declared anywhere before, so a
+  missing install showed up only as a traceback from a generated script.
+- Google Chrome present on the host (`/usr/bin/google-chrome`). Playwright
+  drives it through `channel="chrome"`, so no `playwright install` step is
+  needed for the browser itself.
+
 ## What Webwright adds to SearchX
 
 The SearchX stack (Sift) handles search and content extraction well. Webwright
@@ -11,7 +20,7 @@ fills the gap for **interactive web tasks** that require browser state:
 | Extract content from a URL | Yes (sift.fetch) | No |
 | Fill out a form | No | Yes |
 | Click through a multi-step flow | No | Yes |
-| JS-heavy site interaction | Partial (Scrapling) | Yes (Playwright Firefox) |
+| JS-heavy site interaction | Partial (Scrapling) | Yes (Playwright + system Chrome) |
 | Verify filters applied correctly | No | Yes (screenshot evidence) |
 | Parameterized reusable scripts | No | Yes (CLI tool mode) |
 
@@ -26,7 +35,7 @@ User request
     └── "do this web task" / "fill out this form" / "click through X"
             └── sift.webwright
                     └── Webwright skill (microsoft/Webwright)
-                            └── Playwright Firefox (local, headless)
+                            └── Playwright → system Chrome (local, headless)
 ```
 
 ## When to route to Webwright
@@ -84,10 +93,31 @@ original task but the user can re-run with different args later.
 
 ## Playwright configuration
 
-- Browser: Firefox (headless=True)
+- Browser: the system Chrome, driven as `chromium.launch(channel="chrome", args=["--no-sandbox"])`
+  (headless=True). `channel="chrome"` is the real Chrome already installed on
+  the host, not Playwright's bundled Chromium — nothing is downloaded, and
+  `--no-sandbox` is required when running as root.
 - Viewport: 1280 x 1800 (never full_page screenshots)
 - Each run launches a fresh browser — no persistent state
-- Akamai-protected sites that reject Chromium work under Firefox
+- Exploration fails the run instead of reporting ready when the page did not
+  actually render. Two cases are enforced:
+  - **`EXPLORE_FAILED`** — nothing painted: blank screenshot and an empty ARIA
+    snapshot. Navigation now waits for `load`, then network idle, then for the
+    body to carry text, because screenshotting straight after
+    `domcontentloaded` captured a single-colour image while the title looked
+    correct.
+  - **`EXPLORE_BLOCKED`** — a bot-check interstitial: a CAPTCHA marker together
+    with an implausibly thin page (< 2000 ARIA characters). Both conditions are
+    required so a page legitimately discussing CAPTCHAs is not flagged. For
+    scale, `bing.com` measures ~40k ARIA characters and a Google results page
+    behind a reCAPTCHA measures ~390.
+  Either one marks the run `INCOMPLETE` in the summary. A skeleton is still
+  written so the work is not lost, but it must not be treated as verified.
+- Some Akamai-protected sites reject Playwright's bundled Chromium. Real
+  Chrome fares better than the bundle, but if a site still refuses, Firefox
+  is the documented fallback — it is not installed here, so it needs
+  `python -m playwright install firefox` first, then swap the launch call
+  in `generate_exploration_script()` to `p.firefox.launch()`.
 
 ## Safety rules
 

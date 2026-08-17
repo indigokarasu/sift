@@ -50,7 +50,12 @@ def write_plan(ws: Path, task: str, critical_points: list[str]) -> Path:
 
 
 def generate_exploration_script(start_url: str) -> str:
-    return r"""
+    # NOTE: do not use str.format() here. The generated code contains literal
+    # braces (viewport={"width": ...}) which format() reads as replacement
+    # fields — that raised KeyError: '"width"' on every single invocation and
+    # the runner never reached Playwright. Substitute an explicit placeholder
+    # instead, so the emitted script may contain arbitrary Python.
+    template = r"""
 import asyncio
 from pathlib import Path
 from playwright.async_api import async_playwright
@@ -63,7 +68,7 @@ async def explore():
         browser = await p.firefox.launch(headless=True)
         ctx = await browser.new_context(viewport={"width": 1280, "height": 1800})
         page = await ctx.new_page()
-        await page.goto("{url}", wait_until="domcontentloaded")
+        await page.goto("__START_URL__", wait_until="domcontentloaded")
         await page.screenshot(path=str(SCREENSHOTS / "explore_1_start.png"))
         print("URL:", page.url)
         print("TITLE:", await page.title())
@@ -72,7 +77,8 @@ async def explore():
         await browser.close()
 
 asyncio.run(explore())
-""".format(workspace="{workspace}", url=start_url)
+"""
+    return template.replace("__START_URL__", start_url)
 
 
 def run_script(script_path: Path, cwd: Path) -> tuple[str, str, int]:
@@ -161,6 +167,23 @@ def main():
         print(f"[explore stderr] {stderr[:500]}", file=sys.stderr)
     explore_path.unlink(missing_ok=True)
 
+    # The return code was previously ignored, so a failed exploration flowed
+    # straight into authoring and the run still summarised as ready. Exploration
+    # is what produces the screenshots the later phases are verified against, so
+    # a failure here has to be stated.
+    explore_ok = (rc == 0)
+    if not explore_ok:
+        print(f"[Webwright] Exploration FAILED (exit {rc}). "
+              f"No screenshots were captured, so nothing downstream can be "
+              f"verified against them.", file=sys.stderr)
+        if "No module named 'playwright'" in (stderr or ""):
+            print("[Webwright] Cause: Playwright is not installed in this "
+                  "interpreter. Install it and its browser before rerunning:\n"
+                  "    pip install playwright && python -m playwright install firefox",
+                  file=sys.stderr)
+        print("[Webwright] Continuing to author a skeleton, but treat this run "
+              "as INCOMPLETE.", file=sys.stderr)
+
     # Phase 2: Generate final script skeleton
     print(f"\n[Webwright] Phase 2: Authoring final_script.py")
     mode_tag = "CLI tool mode" if args.craft else "one-shot mode"
@@ -226,10 +249,13 @@ if __name__ == "__main__":
 
     # Summary
     print(f"\n{'='*60}")
-    print(f"Webwright run_{{run_id}} ready")
+    print(f"Webwright run_{run_id} "
+          f"{'ready' if explore_ok else 'INCOMPLETE (exploration failed)'}")
     print(f"  Plan:       {plan_path}")
     print(f"  Script:     {final_path}")
-    print(f"  Explore:    {ws}/screenshots/explore_1_start.png")
+    _shot = ws / "screenshots" / "explore_1_start.png"
+    print(f"  Explore:    {_shot}" if _shot.exists()
+          else "  Explore:    (none — exploration produced no screenshot)")
     print(f"\nWorkflow: Plan → Explore → Author → Execute → Verify")
     print(f"Current state: Authoring (edit the TODO in final_script.py)")
     print('='*60)

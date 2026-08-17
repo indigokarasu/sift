@@ -155,7 +155,7 @@ Sift may read Thread's active context for query rewriting and Weave's database f
 - `sift.journal` — write journal for the current run; called at end of every run
 - `sift.update` — pull latest from GitHub source; preserves journals and data
 - `sift.fetch [url]` — extract clean Markdown content from a URL. Runs Scrapling first (fast HTTP for static sites, headless browser mode for JS-heavy sites); falls back to Jina Reader (`r.jina.ai/<url>`) if Scrapling output is below content threshold. Returns Markdown with structure preserved. Use for summarizing a specific page or document the user provides.
-- `sift.webwright` — execute an interactive web task using browser automation (Playwright Firefox). Write the plan, exploration screenshots, instrumented final_script.py, execution log, and self-verification into `{agent_root}/commons/data/ocas-sift/webwright/`. For form filling, multi-step flows, JS-heavy sites, interactive filtering, or any task where the browser is the workspace. Read `references/webwright-integration.md` before first use.
+- `sift.webwright` — execute an interactive web task using browser automation (Playwright driving the system Chrome). **Requires the `playwright` package** (`pip install playwright`); it uses the already-installed Chrome via `channel="chrome"`, so no browser download is needed. Write the plan, exploration screenshots, instrumented final_script.py, execution log, and self-verification into `{agent_root}/commons/data/ocas-sift/webwright/`. For form filling, multi-step flows, JS-heavy sites, interactive filtering, or any task where the browser is the workspace. Read `references/webwright-integration.md` before first use.
 
 ## Response modes
 
@@ -241,7 +241,7 @@ Sift writes Signal files to Elephas (via journal signal payload): the `signal` p
 Read `references/pitfalls.md` for the full list. Key highlights:
 
 - **Answer-from-knowledge trap:** Don't answer product/how-to questions from training data alone. Use SearXNG + fetch. (See Load-First Rule above.)
-- **CAPTCHA cascade:** From cloud environments, ALL major search engines block headless browsers. Use SearXNG (`localhost:8888`) or CSAPI instead.
+- **CAPTCHA cascade:** From cloud environments most search engines block automated browsers, but not uniformly — measured from this host through the system Chrome, Google's results page serves an "unusual traffic" reCAPTCHA with zero results while Bing answers normally. Prefer SearXNG (`localhost:8888`) or CSAPI, and if you do drive a browser, check the page for CAPTCHA markers rather than assuming an empty result set means the subject is unfindable.
 - **Credential sanitizer blocks API key writes:** The Hermes output sanitizer intercepts API keys. If CSAPI fails with missing key, the owner must add it manually.
 
 ## Support file map

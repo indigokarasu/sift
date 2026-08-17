@@ -49,7 +49,7 @@ def write_plan(ws: Path, task: str, critical_points: list[str]) -> Path:
     return plan_path
 
 
-def generate_exploration_script(start_url: str) -> str:
+def generate_exploration_script(start_url: str, workspace: Path) -> str:
     # NOTE: do not use str.format() here. The generated code contains literal
     # braces (viewport={"width": ...}) which format() reads as replacement
     # fields — that raised KeyError: '"width"' on every single invocation and
@@ -60,15 +60,22 @@ import asyncio
 from pathlib import Path
 from playwright.async_api import async_playwright
 
-WORKSPACE = Path("{workspace}")
+WORKSPACE = Path("__WORKSPACE__")
 SCREENSHOTS = WORKSPACE / "screenshots"
 
 async def explore():
     async with async_playwright() as p:
-        browser = await p.firefox.launch(headless=True)
+        # Use the system Chrome already present on the host. The bundled
+        # chromium revision in the local cache does not match this playwright
+        # build, and firefox was never downloaded at all, so channel="chrome"
+        # avoids fetching a browser purely to run a page. --no-sandbox is
+        # needed when running as root.
+        browser = await p.chromium.launch(
+            headless=True, channel="chrome", args=["--no-sandbox"])
         ctx = await browser.new_context(viewport={"width": 1280, "height": 1800})
         page = await ctx.new_page()
         await page.goto("__START_URL__", wait_until="domcontentloaded")
+        SCREENSHOTS.mkdir(parents=True, exist_ok=True)
         await page.screenshot(path=str(SCREENSHOTS / "explore_1_start.png"))
         print("URL:", page.url)
         print("TITLE:", await page.title())
@@ -78,7 +85,9 @@ async def explore():
 
 asyncio.run(explore())
 """
-    return template.replace("__START_URL__", start_url)
+    return (template
+            .replace("__START_URL__", start_url)
+            .replace("__WORKSPACE__", str(workspace)))
 
 
 def run_script(script_path: Path, cwd: Path) -> tuple[str, str, int]:
@@ -156,7 +165,7 @@ def main():
 
     # Phase 1: Exploration
     print("\n[Webwright] Phase 1: Exploration")
-    explore_script = generate_exploration_script(args.start_url)
+    explore_script = generate_exploration_script(args.start_url, ws)
     explore_path = ws / "explore_tmp.py"
     explore_path.write_text(explore_script)
 
@@ -210,7 +219,13 @@ async def main():
     log = open(LOG, "a")
 
     async with async_playwright() as p:
-        browser = await p.firefox.launch(headless=True)
+        # Use the system Chrome already present on the host. The bundled
+        # chromium revision in the local cache does not match this playwright
+        # build, and firefox was never downloaded at all, so channel="chrome"
+        # avoids fetching a browser purely to run a page. --no-sandbox is
+        # needed when running as root.
+        browser = await p.chromium.launch(
+            headless=True, channel="chrome", args=["--no-sandbox"])
         ctx = await browser.new_context(viewport={{"width": 1280, "height": 1800}})
         page = await ctx.new_page()
 

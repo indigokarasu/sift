@@ -174,7 +174,14 @@ All configured search sources fire in parallel. Results are deduplicated by URL 
 
 - **Internal knowledge** — LLM knowledge, conversation context, Chronicle if available. Always runs first as a pre-check.
 - **Free web search (parallel fan-out)** — all of the following fire simultaneously:
-  - **N2 MCP** (`n2_web_search`) — SearXNG-backed, 70+ engines, no API key required. Registered during `sift.init`. Also provides `n2_news_search` for recency-focused queries.
+  - **N2 MCP** (`n2_web_search`) — SearXNG-backed, no API key required. Registered during `sift.init`. Also provides `n2_news_search` for recency-focused queries. SearXNG aggregates many engines, but only a handful answer from a datacenter IP — the rest are CAPTCHA'd or rate-limited — so treat one call as a narrow sample rather than coverage of the web. Before concluding a topic is unfindable, check which engines are actually contributing:
+
+    ```bash
+    curl -s "$SEARXNG_URL/search?q=test&format=json" \
+      | jq '{contributing: ([.results[].engines[]] | unique), failing: [.unresponsive_engines[][0]]}'
+    ```
+
+    A short `contributing` list means search is degraded at the engine layer; rephrasing the query will not help, so go to primary sources (`references/primary_source_research.md`). A degraded engine layer is easy to miss because the service still answers HTTP 200 with plausible-looking results.
   - **Brave Search API** — structured web results. See `references/search_tiers.md` for provider configuration and API keys.
   - **SearXNG** — self-hosted instance on `http://localhost:8888`. **This is the primary search source on VPS environments.** Always returns results when browser-based search is CAPTCHA-blocked.
   - **Platform search** — agent-reach on Twitter/X (via Mirror Rotator → Search Bridge), Reddit, LinkedIn, GitHub, etc.

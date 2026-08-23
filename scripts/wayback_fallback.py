@@ -38,7 +38,6 @@ import json
 import re
 import sys
 import time
-import zlib
 
 import urllib.error
 import urllib.parse
@@ -59,6 +58,8 @@ _BLOCK_PATTERNS = (
 
 
 def _decode_body(raw: bytes, encoding: str) -> bytes:
+    import zlib  # lazy: stdlib, but kept out of module scope so --help never depends on it
+
     enc = (encoding or "").lower()
     try:
         if "gzip" in enc:

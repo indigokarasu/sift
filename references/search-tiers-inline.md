@@ -13,3 +13,20 @@ All configured search sources fire in parallel. Results are deduplicated by URL 
 For detailed tier-by-tier workflow, API curl examples, and cloud environment fallbacks, read `references/research-workflow.md`.
 
 Read `references/search_tiers.md` for provider details.
+
+
+```bash
+# Primary — web_search tool (SearXNG plugin, no CAPTCHA)
+# Just call web_search directly; it routes to SearXNG automatically.
+# For raw access (e.g., from scripts):
+curl -s "http://localhost:8888/search?q=QUERY&format=json" | python3 -c "
+import json,sys
+d=json.load(sys.stdin)
+for r in d.get('results',[])[:10]:
+    print(r['title']); print(r['url']); print(r['content'][:200]); print()
+"
+
+# Fallback — CSAPI (route through Reach for quota management)
+reach.csapi_check
+reach.csapi_increment  # after each CSAPI query
+```

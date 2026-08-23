@@ -18,6 +18,14 @@ if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; then
   echo "  --help,-h Show this message and exit."
   exit 0
 fi
+
+case "${1:-}" in
+  ""|--force) ;;
+  *)
+    echo "[sift:update] unknown flag: $1 (expected --force or --help)" >&2
+    exit 64 ;;
+esac
+
 cd "$(dirname "$0")/.." || exit 1
 
 if [ "${1:-}" = "--force" ]; then

@@ -17,7 +17,7 @@ Google Custom Search API (CSAPI) is a fallback search tier in Sift, used when fr
 
 Two accounts are configured. The `gsearch/search_tools.py` has been patched to auto-select the API key based on `user_google_email`:
 - `<user-google-email>` → uses `GOOGLE_PSE_API_KEY`
-- `<agent-email>` → uses `GOOGLE_PSE_API_KEY_INDIGO` (falls back to `GOOGLE_PSE_API_KEY` if not set)
+- `<third-party-or-user-email>` → uses `GOOGLE_PSE_API_KEY_INDIGO` (falls back to `GOOGLE_PSE_API_KEY` if not set)
 
 ## Quota
 

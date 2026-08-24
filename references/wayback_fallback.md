@@ -90,3 +90,9 @@ recover a specific dead page's body, only surface live alternates. If the goal i
 "find a *live* alternate source for rotted content," use `sift.search` (SearXNG)
 to discover a fresh URL, then `sift.fetch` it — do not confuse that path with
 this dead-URL recovery tier.
+
+> **`archive_error` is not `no snapshot`.** The availability API can be down —
+> it returned HTTP 502 on 2026-08-17 — and the script used to report that
+> identically to a genuinely unarchived URL. It now returns
+> `next_action: "archive_error"` with presence marked UNKNOWN. Treat that as
+> "retry later", never as "this page was never archived".

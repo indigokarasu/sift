@@ -38,6 +38,7 @@ import json
 import re
 import sys
 import time
+import zlib
 
 import urllib.error
 import urllib.parse
@@ -58,8 +59,6 @@ _BLOCK_PATTERNS = (
 
 
 def _decode_body(raw: bytes, encoding: str) -> bytes:
-    import zlib  # lazy: stdlib, but kept out of module scope so --help never depends on it
-
     enc = (encoding or "").lower()
     try:
         if "gzip" in enc:
@@ -150,8 +149,22 @@ def recover(url: str, timeout_s: float = TOTAL_TIMEOUT_S) -> dict:
         data = json.loads(body) if body and body.startswith("{") else {}
     except json.JSONDecodeError:
         data = {}
+    # An unreachable or erroring archive is NOT the same as an unarchived page.
+    # Reporting both as "no usable snapshot" told the caller to give up on the
+    # URL when the right move was to retry later, and hid archive.org outages
+    # entirely. Distinguish them by the status the request already returned.
+    if status != 200 or not data:
+        envelope["next_action"] = "archive_error"
+        envelope["summary"] = (
+            "Internet Archive availability check failed "
+            f"(HTTP {status if status else 'no response'}); snapshot presence is "
+            "UNKNOWN, not ruled out — retry later rather than treating this URL "
+            "as unarchived."
+        )
+        return envelope
     closest = (data.get("archived_snapshots") or {}).get("closest") or {}
     if not closest.get("available") or not closest.get("timestamp"):
+        envelope["summary"] = "Internet Archive has no snapshot of this URL."
         return envelope
     ts = closest["timestamp"]
     snapshot_url = WAYBACK_SNAPSHOT.format(ts=ts, url=urllib.parse.quote(url, safe=":/%?=&#"))

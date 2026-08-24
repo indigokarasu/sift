@@ -33,6 +33,15 @@ Routine 8-Ks (governance 5.02/5.07, Reg-FD 7.01/9.01, earnings 2.02) are NOT adv
 
 ## 2. Google News RSS — recent coverage without a search engine
 ```
+
+> **Google News RSS requires redirect-following.** Without `-L` the endpoint
+> answers **HTTP 302 with zero items**, which reads as "no results" rather than
+> "you did not follow the redirect". Measured 2026-08-17.
+>
+> ```bash
+> curl -sL 'https://news.google.com/rss/search?q=<query>'   # -L is required
+> ```
+
 https://news.google.com/rss/search?q=<urlencoded query>&hl=en-US&gl=US&ceid=US:en
 ```
 Parse with `xml.etree.ElementTree` (each `<item>` → `<title>` + `<pubDate>`). Rate-limit-friendly and clean compared to DDG/Bing HTML scraping. Best for "is there a catalyst / meme-pump in the last ~2 weeks?" — filter by `pubDate`.

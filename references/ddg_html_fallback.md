@@ -1,5 +1,25 @@
 # DuckDuckGo HTML Fallback (when web_search returns an empty results array)
 
+> **Status check first — this endpoint is currently BLOCKED from this host.**
+> Measured 2026-08-17: `html.duckduckgo.com/html` answers **HTTP 202** with a
+> challenge page and **zero** parseable result links. It returns a body, so a
+> naive check sees "success" and an empty parse rather than an error.
+>
+> Re-verify before relying on it:
+> ```bash
+> curl -s -o /tmp/ddg.html -w '%{http_code}\n' \
+>   -A 'Mozilla/5.0 (X11; Linux x86_64; rv:120.0) Gecko/20100101 Firefox/120.0' \
+>   'https://html.duckduckgo.com/html/?q=test'
+> grep -c 'result__a' /tmp/ddg.html    # 0 means still blocked
+> ```
+> While it is blocked, skip to `primary_source_research.md`. Also check whether
+> the real problem is upstream of DuckDuckGo: if `web_search` came back empty,
+> confirm which engines SearXNG itself has working before assuming the topic is
+> unfindable —
+> `curl -s "$SEARXNG_URL/search?q=test&format=json" | jq '[.results[].engines[]] | unique'`
+
+
+
 ## When to use
 `web_search` routes to the SearXNG plugin and normally works. But it can occasionally return an **empty `results` array inside a successful `success: true` payload** (no error, just zero hits) — usually when SearXNG is degraded or the query phrasing trips it. When that happens and you still need live web discovery, fall back to a direct fetch of the DuckDuckGo HTML endpoint, which returns parseable result links without an API key or CAPTCHA.
 

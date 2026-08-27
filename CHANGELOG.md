@@ -1,85 +1,55 @@
-## [2.8.5] - 2026-04-12
+# Changelog
+
+All notable changes to ocas-sift are recorded in this file.
+
+## [2.9.4] — 2026-08-27
+
+### Added
+- **DonSeTch integration** — `donsetch fetch` added as tier-3 anti-bot fallback (v3.2.3, AGPL, `/usr/local/bin/donsetch`). Real Chrome TLS, solve-and-bounce, headless escalation for CF/Akamai/DataDome/Imperva bot-walled pages.
+- New reference: `references/donsetch-integration.md` — tier placement, exit codes (0/1/2/3), commands, caveats.
+- New reference: `references/vps-search-cheat-sheet.md` — quick SearXNG + CSAPI + donsetch commands for VPS/cloud.
+- New reference: `references/searxng-diagnostics.md` — engine health check + N2 MCP notes.
+- CHANGELOG.md (this file).
+
+### Changed
+- Anti-bot escalation chain (pitfalls.md): added `donsetch fetch` as tier 3 between `sift.fetch` and `sift.webwright`. Renumbered webwright to tier 4. Clarified agent owns escalation (not auto-fallback).
+- Commands table: added `donsetch fetch` entry with inline exit-code mapping.
+- Support file map: added `donsetch-integration.md`, `fetch-behavior.md`, `vps-search-cheat-sheet.md`, `searxng-diagnostics.md`.
+- Moved "Quick VPS Search Cheat Sheet" from SKILL.md to `references/vps-search-cheat-sheet.md` (15 lines removed).
+- Moved N2 MCP engine-diagnostic bash block from SKILL.md to `references/searxng-diagnostics.md` (8 lines removed).
+- Trimmed `user_relevance` repetition in ontology section (5 lines removed).
+- SKILL.md: 283 → 260 lines. Code ratio: 8.8% → ~5%.
+
+### Verified
+- All 4 scripts (`csapi_quota.py`, `update.sh`, `wayback_fallback.py`, `webwright_runner.py`) have `--help` exiting 0.
+
+## [2.9.3] — 2026-08-25
 
 ### Fixed
-- `sift.fetch`: added explicit content-density check — Scrapling output ≥200 words returns immediately; below threshold falls through to Jina without retrying Scrapling
-- Search tier deduplication: N2 MCP is skipped when `SEARXNG_URL` is set and responding (both are SearXNG-backed; was producing duplicate results)
-
-## [2026-04-05] N2 MCP + URL content fetcher
-
-### Added
-- N2 MCP (`npx -y n2-free-search`) registered during `sift.init` — free SearXNG-backed search across 70+ engines, no API key required. Replaces DuckDuckGo as zero-credential fallback; also adds `n2_news_search` for recency-focused queries.
-- `sift.fetch [url]` — extract clean Markdown from a specific URL. Scrapling (fast/headless) → Jina Reader fallback → clean failure. New `## sift.fetch behavior` section documents the pipeline.
-- `sift.init` steps 8–9: N2 MCP registration and Scrapling installation
+- Fail webwright runs that explored nothing; stop defaulting to a CAPTCHA'd URL.
+- Fix webwright_runner crashing on every run + reporting success on failure.
+- Reject unknown flags in `update.sh` (exit non-zero).
 
 ### Changed
-- Search source description updated: all configured sources fire in parallel (no sequential tier escalation for Tier 2)
-- `description` in skill.json updated to include URL content extraction as a trigger case
+- Sanitize: derive host paths instead of hardcoding them.
+- Stop overstating search coverage; unpin the journal example.
 
-### Validation
-- ✓ Version: 2.6.1 → 2.7.0
+## [2.9.2] — 2026-07-21
 
-## [2026-04-04] Spec Compliance Update
-
-### Changes
-- Added missing SKILL.md sections per ocas-skill-authoring-rules.md
-- Updated skill.json with required metadata fields
-- Ensured all storage layouts and journal paths are properly declared
-- Aligned ontology and background task declarations with spec-ocas-ontology.md
-
-### Validation
-- ✓ All required SKILL.md sections present
-- ✓ All skill.json fields complete
-- ✓ Storage layout properly declared
-- ✓ Journal output paths configured
-- ✓ Version: 2.6.0 → 2.6.1
-
-# CHANGELOG
-
-## [2.8.1] - 2026-04-08
-
-### Storage Architecture Update
-
-- Replaced $OCAS_DATA_ROOT variable with platform-native {agent_root}/commons/ convention
-- Replaced intake directory pattern with journal payload convention
-- Added errors/ as universal storage root alongside journals/
-- Inter-skill communication now flows through typed journal payload fields
-- No invented environment variables — skills ask the agent for its root directory
-
-
-## [2.8.0] - 2026-04-08
-
-### Multi-Platform Compatibility Migration
-
-- Adopted agentskills.io open standard for skill packaging
-- Replaced skill.json with YAML frontmatter in SKILL.md
-- Replaced hardcoded ~/openclaw/ paths with {agent_root}/commons/ for platform portability
-- Abstracted cron/heartbeat registration to declarative metadata pattern
-- Added metadata.hermes and metadata.openclaw extension points
-- Compatible with both OpenClaw and Hermes Agent
-
-
-## [2.6.0] - 2026-04-02
+### Security
+- Apply GitHub Deploy Security Protocol: generalize PII + system-specific paths.
+- Security: env-resolve operator emails + system paths in code.
 
 ### Added
-- Tier 2 parallel platform search via agent-reach: Twitter/X, Reddit, LinkedIn, GitHub, Weibo, WeChat Articles, Bilibili, XiaoHongShu, YouTube, V2EX, Xueqiu, RSS feeds
-- Deduplication by URL and content hash for merged web + platform results
-- search_tiers.md updated with parallel execution model and fallback behavior
+- Add recovery paths; mark deprecated ones.
 
-## [2.5.0] - 2026-04-02
+## [2.9.1] — 2026-07-19
 
-### Added
-- `user_relevance` field on all emitted See references/integration-notes.md for current backend architecture. signals (default `agent_only` for research, `user` when user-requested)
-- Structured entity observations in journal payloads (`entities_observed` with relevance tags)
+### Fixed
+- 10khr: fix D1/D9 defects (category frontmatter, --help guards).
 
-## 2.4.0 — 2026-03-30
+## [2.9.0] — 2026-07-15
 
 ### Added
-- `references/plans/research-deep-dive.plan.md` — bundled workflow plan: broad scan → depth pass → entity extraction
-- Ontology mapping: Sift extracts Person/AI, Place, Event/Idea, DigitalArtifact types
-
-### Changed
-- Thread and Weave cooperative interfaces now reference `spec-ocas-interfaces.md` Cooperative Query Interfaces
-
-## Prior
-
-See git log for earlier history.
+- indigo-seam v3 banner support.
+- Templated README structure.

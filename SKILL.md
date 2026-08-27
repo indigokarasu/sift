@@ -119,11 +119,6 @@ Every Signal emitted by Sift carries a `user_relevance` field with one of two va
 
 **Default is `"agent_only"`** because much of Sift's research may be agent-initiated (scheduled runs, background enrichment, cooperative queries from other skills). A signal receives `user_relevance: "user"` only when:
 
-1. The user explicitly requested the search or research (e.g., "search for X", "look up Y", or any direct user prompt that triggered the run), OR
-2. The entity has a demonstrated connection to an entity already in Chronicle with `user_relevance: "user"`.
-
-When in doubt, default to `"agent_only"`. Elephas can promote later if a user connection is established.
-
 Signal example:
 ```json
 {
@@ -154,7 +149,8 @@ Sift may read Thread's active context for query rewriting and Weave's database f
 - `sift.status` — return current state: active threads, quota usage, source reputation summary
 - `sift.journal` — write journal for the current run; called at end of every run
 - `sift.update` — pull latest from GitHub source; preserves journals and data
-- `sift.fetch [url]` — extract clean Markdown content from a URL. Runs Scrapling first (fast HTTP for static sites, headless browser mode for JS-heavy sites); falls back to Jina Reader (`r.jina.ai/<url>`) if Scrapling output is below content threshold. Returns Markdown with structure preserved. Use for summarizing a specific page or document the user provides.
+- `sift.fetch [url]` — extract clean Markdown content from a URL. Runs Scrapling first (fast HTTP for static sites, headless browser mode for JS-heavy sites); falls back to Jina Reader (`r.jina.ai/<url>`) if Scrapling output is below content threshold. Returns Markdown with structure preserved. Use for summarizing a specific page or document the user provides. **Exit codes:** `0` success · `1` permanent error (escalate to `donsetch fetch`) · `2` transient (retry) · `3` walled (escalate to `donsetch fetch` or `sift.webwright`). See `references/donsetch-integration.md` for the full anti-bot escalation chain.
+- `donsetch fetch [url]` — anti-bot / Cloudflare-blocked fetch via the locally installed `donsetch` binary (v3.2.3, AGPL, `/usr/local/bin/donsetch`). Uses real Chrome TLS, solve-and-bounce, and headless escalation. Use when `sift.fetch` returns exit 1/3, bot-wall / 403 / empty / CAPTCHA on CF, Akamai, DataDome, Imperva. See `references/donsetch-integration.md`.
 - `sift.webwright` — execute an interactive web task using browser automation (Playwright driving the system Chrome). **Requires the `playwright` package** (`pip install playwright`); it uses the already-installed Chrome via `channel="chrome"`, so no browser download is needed. Write the plan, exploration screenshots, instrumented final_script.py, execution log, and self-verification into `{agent_root}/commons/data/ocas-sift/webwright/`. For form filling, multi-step flows, JS-heavy sites, interactive filtering, or any task where the browser is the workspace. Read `references/webwright-integration.md` before first use.
 
 ## Response modes
@@ -187,22 +183,7 @@ All configured search sources fire in parallel. Results are deduplicated by URL 
   - **Platform search** — agent-reach on Twitter/X (via Mirror Rotator → Search Bridge), Reddit, LinkedIn, GitHub, etc.
 - **Google Custom Search API (CSAPI)** — fallback when free web search returns insufficient results. Uses `mcp_google_workspace_search_custom`. Quota-limited: 1,000 queries/month free tier. Check quota before calling (`csapi_quota.py check`), increment after (`csapi_quota.py increment`).
 
-For detailed tier-by-tier workflow, API curl examples, and cloud environment fallbacks, read `references/research-workflow.md`.
-
-## Quick VPS Search Cheat Sheet
-
-```bash
-# Primary — SearXNG (localhost:8888, no CAPTCHA)
-curl -s "http://localhost:8888/search?q=QUERY&format=json" | python3 -c "
-import json,sys
-d=json.load(sys.stdin)
-for r in d.get('results',[])[:10]:
-    print(r['title']); print(r['url']); print(r['content'][:200]); print()
-"
-
-# Fallback — CSAPI (check quota first)
-python3 ~/.hermes/skills/ocas-sift/scripts/csapi_quota.py check
-```
+For detailed tier-by-tier workflow, API curl examples, and cloud environment fallbacks, read `references/research-workflow.md` and `references/vps-search-cheat-sheet.md`.
 
 ## Source reputation model
 
@@ -257,8 +238,11 @@ Read `references/pitfalls.md` for the full list. Key highlights:
 | `references/query_rewrite.md` | Before query rewriting |
 | `references/journal.md` | Before sift.journal; at end of every run |
 | `references/mcp-redirect-pattern.md` | The MCP redirect pattern — how phantom tool calls (web_search, web_extract) are intercepted and routed to SearXNG via MCP servers |
-| `references/webwright-integration.md` | Before `sift.webwright` |
-| `references/local-business-search.md` | When searching for local businesses, services, or venues — RapidAPI Places workflow |
+|| `references/webwright-integration.md` | Before `sift.webwright` |
+|| `references/local-business-search.md` | When searching for local businesses, services, or venues — RapidAPI Places workflow |
+|| `references/donsetch-integration.md` | When `sift.fetch` fails with bot-wall / 403 / empty / CAPTCHA — anti-bot tier-3 fallback |
+|| `references/fetch-behavior.md` | Before using `sift.fetch` — fetch pipeline behavior, thresholds, and fallback logic |
+|| `references/vps-search-cheat-sheet.md` | When running searches from VPS/cloud — quick SearXNG + CSAPI + donsetch commands |
 
 ## Background tasks
 

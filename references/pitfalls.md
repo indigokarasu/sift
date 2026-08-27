@@ -53,7 +53,7 @@ When fetching URLs from VPS/cloud IPs, anti-bot systems (Cloudflare, Akamai, Dat
 3. `sift.webwright` (Playwright Firefox) — handles JS-heavy sites
 4. `sift.webwright` with `stealth: true` — fingerprint randomization + challenge wait, for protected sites
 
-Auto-escalate when: HTTP 403, "Just a moment…" title, body < 200 chars on a loaded page, or challenge HTML detected. See "Browsing Escalation Chain" section in SKILL.md for full details.
+Auto-escalate when: HTTP 403, "Just a moment…" title, body < 200 chars on a loaded page, or challenge HTML detected. **The agent owns escalation** — `sift.fetch` does not auto-fallback to `donsetch`; the agent must read the exit code and invoke the next tier explicitly. See "Browsing Escalation Chain" section in SKILL.md for full details.
 
 ## Surface-depth trap ("try harder" pattern)
 

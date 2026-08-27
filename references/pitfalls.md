@@ -49,8 +49,9 @@ The `execute_code` tool can be blocked by security policy, even outside cron mod
 When fetching URLs from VPS/cloud IPs, anti-bot systems (Cloudflare, Akamai, DataDome, Imperva) will block fast HTTP clients. Follow the escalation chain:
 
 1. `sift.fetch` (Scrapling → Jina) — handles 90% of sites, near-instant
-2. `sift.webwright` (Playwright Firefox) — handles JS-heavy sites
-3. `sift.webwright` with `stealth: true` — fingerprint randomization + challenge wait, for protected sites
+2. `donsetch fetch` (`/usr/local/bin/donsetch` v3.2.3, AGPL) — anti-bot / CF-blocked / solve-and-bounce via real Chrome TLS. Use when `sift.fetch` returns bot-wall / 403 / empty / CAPTCHA on CF, Akamai, DataDome, Imperva. See `references/donsetch-integration.md`. Not a tier-1/2 replacement; tier-3 escalation only.
+3. `sift.webwright` (Playwright Firefox) — handles JS-heavy sites
+4. `sift.webwright` with `stealth: true` — fingerprint randomization + challenge wait, for protected sites
 
 Auto-escalate when: HTTP 403, "Just a moment…" title, body < 200 chars on a loaded page, or challenge HTML detected. See "Browsing Escalation Chain" section in SKILL.md for full details.
 

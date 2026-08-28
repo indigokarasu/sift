@@ -1,4 +1,5 @@
 ---
+warning: 'FALSE TRIGGER RISK: Has had 100% false trigger rate on interactive loads (2/2 in 24h — no sift.fetch/sift.search procedure followed; loaded for repo/push clarification, not structured research). Do NOT load for repo, push, or unrelated resource questions; use clarification + ocas-reach instead. Added automatically on 2026-08-27.'
 name: ocas-sift
 source: https://github.com/indigokarasu/sift
 description: >-

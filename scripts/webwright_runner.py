@@ -65,34 +65,26 @@ WORKSPACE = Path("__WORKSPACE__")
 SCREENSHOTS = WORKSPACE / "screenshots"
 
 async def launch_browser(p):
-    # Obscura is a Rust headless engine reachable over CDP with anti-detect
-    # built in: about 30 MB resident against 200-400 MB for Chrome, and it
-    # returns content on pages that gate headless Chrome (measured on this
-    # host: 1254 vs 336 chars from Google search, 96590 vs 2328 from Bing).
-    # It honours new_context(viewport=...) and locator.aria_snapshot(), and
-    # closing the connection does not stop the shared server.
-    #
-    # OBSCURA_ENGINE: auto (default) prefers Obscura and falls back to the
-    # system Chrome when it is unreachable; obscura fails loudly; chrome
-    # never touches it. The Chrome fallback uses channel="chrome" because the
-    # bundled chromium revision does not match this playwright build.
+    # Every browser-driving skill on this host shares one launch cascade
+    # (obscura -> firefox -> chrome -> chromium), so no skill is more fragile
+    # than another because of how it happens to be written. If the shared
+    # module cannot be imported, fall back to a direct Chrome launch so a
+    # generated script still runs standalone.
     import os
-    cdp = os.environ.get("OBSCURA_CDP", "http://127.0.0.1:9222")
-    engine = os.environ.get("OBSCURA_ENGINE", "auto").strip().lower()
-    if engine in ("auto", "obscura"):
-        try:
-            browser = await p.chromium.connect_over_cdp(cdp, timeout=8000)
-            print("ENGINE: obscura")
-            return browser
-        except Exception as exc:
-            if engine == "obscura":
-                raise
-            print("ENGINE: chrome (obscura unreachable: "
-                  + str(exc).splitlines()[0][:70] + ")")
-    else:
-        print("ENGINE: chrome")
-    return await p.chromium.launch(
-        headless=True, channel="chrome", args=["--no-sandbox"])
+    import sys
+    scripts_dir = os.path.join(os.environ.get("HERMES_HOME", ""), "scripts")
+    if scripts_dir and scripts_dir not in sys.path:
+        sys.path.insert(0, scripts_dir)
+    try:
+        import browser_cascade
+    except Exception:
+        print("ENGINE: chrome (shared cascade unavailable)")
+        return await p.chromium.launch(
+            headless=True, channel="chrome", args=["--no-sandbox"])
+    browser, engine, attempts = await browser_cascade.launch_async(p)
+    print(browser_cascade.describe(attempts))
+    return browser
+
 
 async def explore():
     async with async_playwright() as p:
@@ -299,34 +291,26 @@ SCREENSHOTS = WORKSPACE / "screenshots"
 SCREENSHOTS.mkdir(exist_ok=True)
 
 async def launch_browser(p):
-    # Obscura is a Rust headless engine reachable over CDP with anti-detect
-    # built in: about 30 MB resident against 200-400 MB for Chrome, and it
-    # returns content on pages that gate headless Chrome (measured on this
-    # host: 1254 vs 336 chars from Google search, 96590 vs 2328 from Bing).
-    # It honours new_context(viewport=...) and locator.aria_snapshot(), and
-    # closing the connection does not stop the shared server.
-    #
-    # OBSCURA_ENGINE: auto (default) prefers Obscura and falls back to the
-    # system Chrome when it is unreachable; obscura fails loudly; chrome
-    # never touches it. The Chrome fallback uses channel="chrome" because the
-    # bundled chromium revision does not match this playwright build.
+    # Every browser-driving skill on this host shares one launch cascade
+    # (obscura -> firefox -> chrome -> chromium), so no skill is more fragile
+    # than another because of how it happens to be written. If the shared
+    # module cannot be imported, fall back to a direct Chrome launch so a
+    # generated script still runs standalone.
     import os
-    cdp = os.environ.get("OBSCURA_CDP", "http://127.0.0.1:9222")
-    engine = os.environ.get("OBSCURA_ENGINE", "auto").strip().lower()
-    if engine in ("auto", "obscura"):
-        try:
-            browser = await p.chromium.connect_over_cdp(cdp, timeout=8000)
-            print("ENGINE: obscura")
-            return browser
-        except Exception as exc:
-            if engine == "obscura":
-                raise
-            print("ENGINE: chrome (obscura unreachable: "
-                  + str(exc).splitlines()[0][:70] + ")")
-    else:
-        print("ENGINE: chrome")
-    return await p.chromium.launch(
-        headless=True, channel="chrome", args=["--no-sandbox"])
+    import sys
+    scripts_dir = os.path.join(os.environ.get("HERMES_HOME", ""), "scripts")
+    if scripts_dir and scripts_dir not in sys.path:
+        sys.path.insert(0, scripts_dir)
+    try:
+        import browser_cascade
+    except Exception:
+        print("ENGINE: chrome (shared cascade unavailable)")
+        return await p.chromium.launch(
+            headless=True, channel="chrome", args=["--no-sandbox"])
+    browser, engine, attempts = await browser_cascade.launch_async(p)
+    print(browser_cascade.describe(attempts))
+    return browser
+
 
 async def main():
     LOG.write_text("")

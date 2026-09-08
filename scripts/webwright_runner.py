@@ -64,15 +64,39 @@ from playwright.async_api import async_playwright
 WORKSPACE = Path("__WORKSPACE__")
 SCREENSHOTS = WORKSPACE / "screenshots"
 
+async def launch_browser(p):
+    # Obscura is a Rust headless engine reachable over CDP with anti-detect
+    # built in: about 30 MB resident against 200-400 MB for Chrome, and it
+    # returns content on pages that gate headless Chrome (measured on this
+    # host: 1254 vs 336 chars from Google search, 96590 vs 2328 from Bing).
+    # It honours new_context(viewport=...) and locator.aria_snapshot(), and
+    # closing the connection does not stop the shared server.
+    #
+    # OBSCURA_ENGINE: auto (default) prefers Obscura and falls back to the
+    # system Chrome when it is unreachable; obscura fails loudly; chrome
+    # never touches it. The Chrome fallback uses channel="chrome" because the
+    # bundled chromium revision does not match this playwright build.
+    import os
+    cdp = os.environ.get("OBSCURA_CDP", "http://127.0.0.1:9222")
+    engine = os.environ.get("OBSCURA_ENGINE", "auto").strip().lower()
+    if engine in ("auto", "obscura"):
+        try:
+            browser = await p.chromium.connect_over_cdp(cdp, timeout=8000)
+            print("ENGINE: obscura")
+            return browser
+        except Exception as exc:
+            if engine == "obscura":
+                raise
+            print("ENGINE: chrome (obscura unreachable: "
+                  + str(exc).splitlines()[0][:70] + ")")
+    else:
+        print("ENGINE: chrome")
+    return await p.chromium.launch(
+        headless=True, channel="chrome", args=["--no-sandbox"])
+
 async def explore():
     async with async_playwright() as p:
-        # Use the system Chrome already present on the host. The bundled
-        # chromium revision in the local cache does not match this playwright
-        # build, and firefox was never downloaded at all, so channel="chrome"
-        # avoids fetching a browser purely to run a page. --no-sandbox is
-        # needed when running as root.
-        browser = await p.chromium.launch(
-            headless=True, channel="chrome", args=["--no-sandbox"])
+        browser = await launch_browser(p)
         ctx = await browser.new_context(viewport={"width": 1280, "height": 1800})
         page = await ctx.new_page()
         await page.goto("__START_URL__", wait_until="load")
@@ -274,18 +298,42 @@ LOG = WORKSPACE / "final_script_log.txt"
 SCREENSHOTS = WORKSPACE / "screenshots"
 SCREENSHOTS.mkdir(exist_ok=True)
 
+async def launch_browser(p):
+    # Obscura is a Rust headless engine reachable over CDP with anti-detect
+    # built in: about 30 MB resident against 200-400 MB for Chrome, and it
+    # returns content on pages that gate headless Chrome (measured on this
+    # host: 1254 vs 336 chars from Google search, 96590 vs 2328 from Bing).
+    # It honours new_context(viewport=...) and locator.aria_snapshot(), and
+    # closing the connection does not stop the shared server.
+    #
+    # OBSCURA_ENGINE: auto (default) prefers Obscura and falls back to the
+    # system Chrome when it is unreachable; obscura fails loudly; chrome
+    # never touches it. The Chrome fallback uses channel="chrome" because the
+    # bundled chromium revision does not match this playwright build.
+    import os
+    cdp = os.environ.get("OBSCURA_CDP", "http://127.0.0.1:9222")
+    engine = os.environ.get("OBSCURA_ENGINE", "auto").strip().lower()
+    if engine in ("auto", "obscura"):
+        try:
+            browser = await p.chromium.connect_over_cdp(cdp, timeout=8000)
+            print("ENGINE: obscura")
+            return browser
+        except Exception as exc:
+            if engine == "obscura":
+                raise
+            print("ENGINE: chrome (obscura unreachable: "
+                  + str(exc).splitlines()[0][:70] + ")")
+    else:
+        print("ENGINE: chrome")
+    return await p.chromium.launch(
+        headless=True, channel="chrome", args=["--no-sandbox"])
+
 async def main():
     LOG.write_text("")
     log = open(LOG, "a")
 
     async with async_playwright() as p:
-        # Use the system Chrome already present on the host. The bundled
-        # chromium revision in the local cache does not match this playwright
-        # build, and firefox was never downloaded at all, so channel="chrome"
-        # avoids fetching a browser purely to run a page. --no-sandbox is
-        # needed when running as root.
-        browser = await p.chromium.launch(
-            headless=True, channel="chrome", args=["--no-sandbox"])
+        browser = await launch_browser(p)
         ctx = await browser.new_context(viewport={{"width": 1280, "height": 1800}})
         page = await ctx.new_page()
 

@@ -2,6 +2,15 @@
 
 All notable changes to ocas-sift are recorded in this file.
 
+## [2.10.0] — 2026-09-16
+
+### Added
+- **Local SearXNG fallback cascade** — when a primary web-search API hits a rate limit / 429 (Brave, N2 MCP outage, etc.), escalate to the local SearXNG instance (`http://localhost:8888/search?q=...&format=json&limit=10`) before attempting paid/CSAPI tiers.
+
+- **Concise/detailed output format** — `scripts/csapi_quota.py` and `scripts/wayback_fallback.py` support `--format=concise` (default, ~60–80% token savings, high-signal fields only or `--format=detailed` (full envelope/UUIDs/fields for chaining）。 Script failure paths return JSON envelopes with human-actionable `actionable_guidance`.
+;- **Declarative eval suite** — `references/evals/eval.yaml` with deterministic + LLM-rubric tasks (fact-extraction precision, SearXNG fallback cascade, concise output format) per `spec-ocas-skill-improvements.md`.
+- **Extraction tooling** — `get-md` documented as the default HTML-to-Markdown extraction engine (`sift.fetch` → Scrapling → Jina Reader → Wayback fallback → `get-md`)。
+
 ## [2.9.4] — 2026-08-27
 
 ### Added

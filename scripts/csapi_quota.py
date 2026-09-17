@@ -133,7 +133,7 @@ def cmd_reset(account=None):
         save_state(state)
 
 
-def cmd_status(account=None):
+def cmd_status(account=None, fmt="concise"):
     """Print quota state as JSON."""
     state = load_state()
     targets = _get_targets(account)
@@ -141,17 +141,30 @@ def cmd_status(account=None):
     for acct in targets:
         state = check_and_reset(state, acct)
         remaining = max(0, MONTHLY_LIMIT - state.get(acct, {}).get("count", 0))
-        output[acct] = {
-            "month": state.get(acct, {}).get("month", current_month()),
-            "used": state.get(acct, {}).get("count", 0),
-            "limit": MONTHLY_LIMIT,
-            "remaining": remaining,
-            "exhausted": remaining <= 0,
-            "resets": next_month(),
-            "history": state.get(acct, {}).get("history", [])
-        }
+        if fmt == "concise":
+            output[acct] = {
+                "remaining": remaining,
+                "used": state.get(acct, {}).get("count", 0),
+                "limit": MONTHLY_LIMIT,
+                "exhausted": remaining <= 0,
+            }
+        else:
+            output[acct] = {
+                "month": state.get(acct, {}).get("month", current_month()),
+                "used": state.get(acct, {}).get("count", 0),
+                "limit": MONTHLY_LIMIT,
+                "remaining": remaining,
+                "exhausted": remaining <= 0,
+                "resets": next_month(),
+                "history": state.get(acct, {}).get("history", [])
+            }
     save_state(state)
-    if len(targets) == 1:
+    if fmt == "concise":
+        if len(targets) == 1:
+            print(json.dumps(list(output.values())[0]))
+        else:
+            print(json.dumps(output))
+    elif len(targets) == 1:
         print(json.dumps(list(output.values())[0], indent=2))
     else:
         print(json.dumps(output, indent=2))
@@ -187,15 +200,27 @@ if __name__ == "__main__":
     account = None
     n = 1
 
-    # Parse args: check account name vs numeric
+    # Parse args: --format flag + account name vs numeric
     remaining_args = sys.argv[2:]
+    account = None
+    n = 1
+    fmt = "concise"
     for arg in remaining_args:
-        if arg in VALID_ACCOUNTS:
+        if arg.startswith("--format="):
+            fmt = arg.split("=", 2)[1]
+        elif arg == "--format":
+            try:
+                fmt = remaining_args[remaining_args.index(arg) + 1]
+            except IndexError:
+                pass
+        elif arg in VALID_ACCOUNTS:
             account = arg
         elif arg.isdigit():
             n = int(arg)
 
     if cmd == "increment":
         cmd_increment(account, n)
+    elif cmd in ("status", "remaining"):
+        COMMANDS[cmd](account, fmt)
     else:
-        cmd_increment(account, n) if False else COMMANDS[cmd](account)
+        COMMANDS[cmd](account)

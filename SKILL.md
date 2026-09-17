@@ -19,7 +19,7 @@ includes:
 - scripts/**
 metadata:
   author: Indigo Karasu (indigokarasu)
-  version: 2.9.3
+  version: "2.10.0"
 triggers:
 - web search
 - research synthesis
@@ -172,11 +172,15 @@ All configured search sources fire in parallel. Results are deduplicated by URL 
 - **Free web search (parallel fan-out)** — all of the following fire simultaneously:
   - **N2 MCP** (`n2_web_search`) — SearXNG-backed, no API key required. Registered during `sift.init`. Also provides `n2_news_search` for recency-focused queries. See `references/searxng-diagnostics.md` for engine-health diagnostics.
   - **Brave Search API** — structured web results. See `references/search_tiers.md` for provider configuration and API keys.
-  - **SearXNG** — self-hosted instance on `http://localhost:8888`. **This is the primary search source on VPS environments.** Always returns results when browser-based search is CAPTCHA-blocked.
+  - **SearXNG** — self-hosted instance on `http://localhost:8888`. **This is the primary search source on VPS environments.** Always returns results when browser-based search is CAPTCHA-blocked. **Fallback cascade**: when a primary web-search API hits a rate limit / 429 (Brave, N2 MCP outage, etc.), escalate to the local SearXNG instance (`http://localhost:8888/search?q=...&format=json&limit=10`) before attempting paid/CSAPI tiers.
   - **Platform search** — agent-reach on Twitter/X (via Mirror Rotator → Search Bridge), Reddit, LinkedIn, GitHub, etc.
 - **Google Custom Search API (CSAPI)** — fallback when free web search returns insufficient results. Uses `mcp_google_workspace_search_custom`. Quota-limited: 1,000 queries/month free tier. Check quota before calling (`csapi_quota.py check`), increment after (`csapi_quota.py increment`).
 
-For detailed tier-by-tier workflow, API curl examples, and cloud environment fallbacks, read `references/research-workflow.md` and `references/vps-search-cheat-sheet.md`.
+**Output format:** Helper scripts (`scripts/*.py`) support `--format=concise` (default — high-signal fields only, ~60–80% token savings or `--format=detailed` (full envelope/UUIDs/fields for downstream programmatic chaining). Every script failure path returns a JSON envelope with human-actionable `actionable_guidance`.
+
+**Extraction tooling:** `get-md` (`indigokarasu/get-md`) is the default HTML-to-Markdown extraction engine — use it over ad-hoc extraction scripts. `sift.fetch` routes clean Markdown via Scrapling → Jina Reader → Wayback fallback → get-md.
+
+For detailed tier-by-tier workflow, API curl examples,and cloud environment fallbacks, read `references/research-workflow.md` and `references/vps-search-cheat-sheet.md`.
 
 ## Source reputation model
 

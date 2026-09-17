@@ -215,17 +215,34 @@ def recover(url: str, timeout_s: float = TOTAL_TIMEOUT_S) -> dict:
 def main() -> int:
     ap = argparse.ArgumentParser(description="Internet Archive (Wayback) recovery for sift.fetch")
     ap.add_argument("url")
-    ap.add_argument("--json", action="store_true", help="emit the full envelope as JSON")
+    ap.add_argument("--format", choices=["concise", "detailed"], default="concise",
+                    help="Output verbosity: concise=key fields (default), detailed=full envelope")
     args = ap.parse_args()
 
     env = recover(args.url)
-    if args.json:
+    if args.format == "concise" and env.get("content_ok"):
+        # High-signal fields only — ~70% token savings for downstream synthesis
+        print(json.dumps({
+            "source": "archive.org",
+            "archived_at": env.get("archived_at"),
+            "content_age_days": env.get("content_age_days"),
+            "is_stale": env.get("is_stale"),
+            "summary": env.get("summary"),
+        }, indent=2, ensure_ascii=False))
+    elif args.format == "detailed":
         print(json.dumps(env, indent=2, ensure_ascii=False))
     else:
-        if env["content_ok"]:
-            print(env["content"])
-        else:
-            print(f"[wayback fallback] {env['summary']}", file=sys.stderr)
+        # concise + failure → actionable envelope
+        print(json.dumps({
+            "content_ok": False,
+            "status": env.get("status"),
+            "next_action": env.get("next_action"),
+            "summary": env.get("summary"),
+            "actionable_guidance": (
+                "Retry the live fetch later (soft 429/5xx), or check archive.org health if 'archive_error'; "
+                "escalate to donsetch fetch for bot walls (exit 3)."
+            ) if not env.get("content_ok") else None,
+        }, indent=2, ensure_ascii=False))
     return 0 if env["content_ok"] else 1
 
 

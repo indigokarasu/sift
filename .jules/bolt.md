@@ -1,0 +1,3 @@
+## 2026-04-13 - Python re.sub Caching vs Redundant File I/O Loop Optimization
+**Learning:** Python's standard `re.sub` module caches up to 512 compiled regex patterns internally (`re._cache`), making manual `re.compile()` pre-compilation yield minimal (< 1%) speedups for string substitutions. In contrast, batching file persistence operations (`save_state()`) outside iteration loops and caching dict lookups yields significant efficiency gains by avoiding redundant disk I/O and JSON serialization.
+**Action:** Focus I/O optimizations on batching disk persistence outside iteration loops rather than micro-optimizing cached standard library regex patterns.

@@ -50,6 +50,28 @@ class TestHelpGuards(unittest.TestCase):
                            cwd=SCRIPTS, capture_output=True, timeout=60)
         self.assertNotEqual(p.returncode, 0)
 
+    def test_csapi_quota_help(self):
+        p = subprocess.run([sys.executable, "csapi_quota.py"],
+                           cwd=SCRIPTS, capture_output=True, timeout=30)
+        self.assertEqual(p.returncode, 2)
+        self.assertIn(b"Google Custom Search API quota tracker", p.stdout)
+
+
+class TestCSAPIQuotaHelpers(unittest.TestCase):
+    def test_csapi_quota_functions(self):
+        csapi = _load("csapi_quota")
+        targets = csapi._get_targets("owner")
+        self.assertEqual(targets, ["owner"])
+        targets_all = csapi._get_targets(None)
+        self.assertEqual(targets_all, ["owner", "indigo"])
+
+        # Test state check_and_reset
+        state = {"owner": {"month": "2000-01", "count": 50}}
+        state = csapi.check_and_reset(state, "owner")
+        self.assertEqual(state["owner"]["count"], 0)
+        self.assertEqual(len(state["owner"]["history"]), 1)
+        self.assertEqual(state["owner"]["history"][0]["queries"], 50)
+
 
 class TestWaybackHelpers(unittest.TestCase):
     def test_decode_body_gzip(self):

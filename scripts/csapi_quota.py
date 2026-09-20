@@ -95,9 +95,11 @@ def cmd_check(account=None):
     all_ok = True
     for acct in targets:
         state = check_and_reset(state, acct)
-        remaining = MONTHLY_LIMIT - state.get(acct, {}).get("count", 0)
+        acct_data = state.get(acct, {})
+        used = acct_data.get("count", 0)
+        remaining = MONTHLY_LIMIT - used
         if remaining <= 0:
-            print(f"  {acct}: EXHAUSTED ({state[acct]['count']}/{MONTHLY_LIMIT})")
+            print(f"  {acct}: EXHAUSTED ({used}/{MONTHLY_LIMIT})")
             all_ok = False
         else:
             print(f"  {acct}: {remaining}/{MONTHLY_LIMIT} remaining")
@@ -130,7 +132,8 @@ def cmd_reset(account=None):
         state = check_and_reset(state, acct)
         state.setdefault(acct, {})["count"] = 0
         print(f"  {acct}: reset to 0/{MONTHLY_LIMIT}")
-        save_state(state)
+    # Optimize: persist state once after processing all targets rather than on each loop iteration
+    save_state(state)
 
 
 def cmd_status(account=None, fmt="concise"):
@@ -138,25 +141,30 @@ def cmd_status(account=None, fmt="concise"):
     state = load_state()
     targets = _get_targets(account)
     output = {}
+    # Optimize: compute date once outside account loop if detailed format is requested
+    resets_date = next_month() if fmt != "concise" else None
+    cur_m = current_month() if fmt != "concise" else None
     for acct in targets:
         state = check_and_reset(state, acct)
-        remaining = max(0, MONTHLY_LIMIT - state.get(acct, {}).get("count", 0))
+        acct_data = state.get(acct, {})
+        used = acct_data.get("count", 0)
+        remaining = max(0, MONTHLY_LIMIT - used)
         if fmt == "concise":
             output[acct] = {
                 "remaining": remaining,
-                "used": state.get(acct, {}).get("count", 0),
+                "used": used,
                 "limit": MONTHLY_LIMIT,
                 "exhausted": remaining <= 0,
             }
         else:
             output[acct] = {
-                "month": state.get(acct, {}).get("month", current_month()),
-                "used": state.get(acct, {}).get("count", 0),
+                "month": acct_data.get("month", cur_m),
+                "used": used,
                 "limit": MONTHLY_LIMIT,
                 "remaining": remaining,
                 "exhausted": remaining <= 0,
-                "resets": next_month(),
-                "history": state.get(acct, {}).get("history", [])
+                "resets": resets_date,
+                "history": acct_data.get("history", [])
             }
     save_state(state)
     if fmt == "concise":
@@ -176,7 +184,8 @@ def cmd_remaining(account=None):
     targets = _get_targets(account)
     for acct in targets:
         state = check_and_reset(state, acct)
-        remaining = max(0, MONTHLY_LIMIT - state.get(acct, {}).get("count", 0))
+        used = state.get(acct, {}).get("count", 0)
+        remaining = max(0, MONTHLY_LIMIT - used)
         print(f"  {acct}: {remaining}/{MONTHLY_LIMIT}")
     save_state(state)
 
@@ -205,14 +214,12 @@ if __name__ == "__main__":
     account = None
     n = 1
     fmt = "concise"
-    for arg in remaining_args:
+    for i, arg in enumerate(remaining_args):
         if arg.startswith("--format="):
-            fmt = arg.split("=", 2)[1]
+            fmt = arg.split("=", 1)[1]
         elif arg == "--format":
-            try:
-                fmt = remaining_args[remaining_args.index(arg) + 1]
-            except IndexError:
-                pass
+            if i + 1 < len(remaining_args):
+                fmt = remaining_args[i + 1]
         elif arg in VALID_ACCOUNTS:
             account = arg
         elif arg.isdigit():

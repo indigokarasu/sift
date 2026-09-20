@@ -54,7 +54,10 @@ def current_month():
 
 
 def check_and_reset(state, account):
-    """Auto-reset counter if we've entered a new month."""
+    """Auto-reset counter if we've entered a new month.
+    Returns (updated_state, modified_boolean).
+    """
+    modified = False
     month = current_month()
     acct = state.get(account, {})
     if acct.get("month") != month:
@@ -67,7 +70,8 @@ def check_and_reset(state, account):
         acct["month"] = month
         acct["count"] = 0
         state[account] = acct
-    return state
+        modified = True
+    return state, modified
 
 
 def next_month():
@@ -93,8 +97,11 @@ def cmd_check(account=None):
     state = load_state()
     targets = _get_targets(account)
     all_ok = True
+    dirty = False
     for acct in targets:
-        state = check_and_reset(state, acct)
+        state, modified = check_and_reset(state, acct)
+        if modified:
+            dirty = True
         acct_data = state.get(acct, {})
         used = acct_data.get("count", 0)
         remaining = MONTHLY_LIMIT - used
@@ -103,7 +110,9 @@ def cmd_check(account=None):
             all_ok = False
         else:
             print(f"  {acct}: {remaining}/{MONTHLY_LIMIT} remaining")
-    save_state(state)
+    # Performance optimization: skip redundant disk I/O / JSON serialization on read-only check
+    if dirty:
+        save_state(state)
     sys.exit(0 if all_ok else 1)
 
 
@@ -112,7 +121,7 @@ def cmd_increment(account=None, n=1):
     state = load_state()
     targets = _get_targets(account)
     for acct in targets:
-        state = check_and_reset(state, acct)
+        state, _ = check_and_reset(state, acct)
         acct_data = state.get(acct, {"month": current_month(), "count": 0, "history": []})
         acct_data["count"] = acct_data.get("count", 0) + int(n)
         state[acct] = acct_data
@@ -129,7 +138,7 @@ def cmd_reset(account=None):
     state = load_state()
     targets = _get_targets(account)
     for acct in targets:
-        state = check_and_reset(state, acct)
+        state, _ = check_and_reset(state, acct)
         state.setdefault(acct, {})["count"] = 0
         print(f"  {acct}: reset to 0/{MONTHLY_LIMIT}")
     # Optimize: persist state once after processing all targets rather than on each loop iteration
@@ -141,11 +150,14 @@ def cmd_status(account=None, fmt="concise"):
     state = load_state()
     targets = _get_targets(account)
     output = {}
+    dirty = False
     # Optimize: compute date once outside account loop if detailed format is requested
     resets_date = next_month() if fmt != "concise" else None
     cur_m = current_month() if fmt != "concise" else None
     for acct in targets:
-        state = check_and_reset(state, acct)
+        state, modified = check_and_reset(state, acct)
+        if modified:
+            dirty = True
         acct_data = state.get(acct, {})
         used = acct_data.get("count", 0)
         remaining = max(0, MONTHLY_LIMIT - used)
@@ -166,7 +178,9 @@ def cmd_status(account=None, fmt="concise"):
                 "resets": resets_date,
                 "history": acct_data.get("history", [])
             }
-    save_state(state)
+    # Performance optimization: skip redundant disk I/O / JSON serialization on read-only status query
+    if dirty:
+        save_state(state)
     if fmt == "concise":
         if len(targets) == 1:
             print(json.dumps(list(output.values())[0]))
@@ -182,12 +196,17 @@ def cmd_remaining(account=None):
     """Print remaining queries for an account (or all)."""
     state = load_state()
     targets = _get_targets(account)
+    dirty = False
     for acct in targets:
-        state = check_and_reset(state, acct)
+        state, modified = check_and_reset(state, acct)
+        if modified:
+            dirty = True
         used = state.get(acct, {}).get("count", 0)
         remaining = max(0, MONTHLY_LIMIT - used)
         print(f"  {acct}: {remaining}/{MONTHLY_LIMIT}")
-    save_state(state)
+    # Performance optimization: skip redundant disk I/O / JSON serialization on read-only query
+    if dirty:
+        save_state(state)
 
 
 COMMANDS = {

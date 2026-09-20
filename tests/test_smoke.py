@@ -67,7 +67,8 @@ class TestCSAPIQuotaHelpers(unittest.TestCase):
 
         # Test state check_and_reset
         state = {"owner": {"month": "2000-01", "count": 50}}
-        state = csapi.check_and_reset(state, "owner")
+        state, modified = csapi.check_and_reset(state, "owner")
+        self.assertTrue(modified)
         self.assertEqual(state["owner"]["count"], 0)
         self.assertEqual(len(state["owner"]["history"]), 1)
         self.assertEqual(state["owner"]["history"][0]["queries"], 50)

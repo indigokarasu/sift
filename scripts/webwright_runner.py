@@ -25,12 +25,16 @@ from pathlib import Path
 
 
 def next_run_id(workspace: Path) -> int:
-    existing = sorted(workspace.glob("final_runs/run_*"))
-    if not existing:
-        return 1
-    last = existing[-1].name  # e.g. "run_3"
-    n = int(last.split("_")[1])
-    return n + 1
+    # Performance optimization: linear scan for max run_id avoids O(N log N)
+    # string sorting and lexicographical ordering bugs (e.g. run_10 vs run_2).
+    max_id = 0
+    final_runs = workspace / "final_runs"
+    if final_runs.exists():
+        for p in final_runs.glob("run_*"):
+            parts = p.name.split("_")
+            if len(parts) == 2 and parts[1].isdigit():
+                max_id = max(max_id, int(parts[1]))
+    return max_id + 1
 
 
 def ensure_workspace(base: Path, task_id: str) -> Path:
@@ -165,12 +169,16 @@ def verify_run(ws: Path, run_dir: Path, critical_points: list[str]) -> dict:
             str(p.relative_to(ws)) for p in screenshots_dir.glob("*.png")
         ])
 
+    # Performance optimization: pre-lowercase log text and screenshots once
+    # to avoid redundant lowercasing and allocations inside the critical points loop.
+    log_lower = results["log"].lower()
+    screenshots_lower = [s.lower() for s in results["screenshots"]]
+
     # Basic verification: check that CPs have corresponding evidence
     for i, cp in enumerate(critical_points, 1):
-        log_text = results["log"]
-        has_screenshot = any(f"cp{i}" in s.lower() or f"critical_{i}" in s.lower()
-                           for s in results["screenshots"])
-        has_log_evidence = f"CP{i}" in log_text or f"cp{i}" in log_text
+        cp_tag = f"cp{i}"
+        has_screenshot = any(cp_tag in s or f"critical_{i}" in s for s in screenshots_lower)
+        has_log_evidence = cp_tag in log_lower
         if has_screenshot or has_log_evidence:
             results["passed"].append(f"CP{i}: {cp}")
         else:

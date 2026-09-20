@@ -74,6 +74,45 @@ class TestCSAPIQuotaHelpers(unittest.TestCase):
         self.assertEqual(state["owner"]["history"][0]["queries"], 50)
 
 
+class TestWebwrightHelpers(unittest.TestCase):
+    def test_next_run_id(self):
+        import tempfile
+        from pathlib import Path
+        webwright = _load("webwright_runner")
+        with tempfile.TemporaryDirectory() as tmpdir:
+            ws = Path(tmpdir)
+            self.assertEqual(webwright.next_run_id(ws), 1)
+
+            final_runs = ws / "final_runs"
+            final_runs.mkdir()
+            (final_runs / "run_1").mkdir()
+            (final_runs / "run_2").mkdir()
+            (final_runs / "run_10").mkdir()
+            # Ensure multi-digit run numbers are parsed as max integer rather than lexicographically
+            self.assertEqual(webwright.next_run_id(ws), 11)
+
+    def test_verify_run(self):
+        import tempfile
+        from pathlib import Path
+        webwright = _load("webwright_runner")
+        with tempfile.TemporaryDirectory() as tmpdir:
+            ws = Path(tmpdir)
+            run_dir = ws / "final_runs" / "run_1"
+            run_dir.mkdir(parents=True)
+            screenshots_dir = run_dir / "screenshots"
+            screenshots_dir.mkdir()
+
+            (run_dir / "final_script_log.txt").write_text("Completed CP1 action\n")
+            (screenshots_dir / "step2_cp2.png").write_text("")
+
+            res = webwright.verify_run(ws, run_dir, ["Action 1", "Action 2", "Action 3"])
+            self.assertEqual(len(res["passed"]), 2)
+            self.assertEqual(len(res["failed"]), 1)
+            self.assertIn("CP1: Action 1", res["passed"])
+            self.assertIn("CP2: Action 2", res["passed"])
+            self.assertIn("CP3: Action 3", res["failed"])
+
+
 class TestWaybackHelpers(unittest.TestCase):
     def test_decode_body_gzip(self):
         import gzip as _gzip

@@ -96,17 +96,24 @@ def _request(url: str, timeout: float) -> tuple[int, str]:
         return 0, f"network_error: {e}"
 
 
-def _html_to_markdown(html: str) -> str:
-    try:
-        import html2text  # type: ignore[import-untyped]  # optional dep, already expected by sift's scrapling pipeline
+# Cache optional html2text module import at top-level to avoid expensive sys.path module lookup
+# failures on every _html_to_markdown invocation when html2text is absent.
+try:
+    import html2text  # type: ignore[import-untyped]  # optional dep, already expected by sift's scrapling pipeline
+except ImportError:
+    html2text = None  # type: ignore[assignment]
 
-        h = html2text.HTML2Text()
-        h.body_width = 0
-        h.ignore_images = False
-        h.ignore_links = False
-        return h.handle(html)
-    except Exception:
-        pass
+
+def _html_to_markdown(html: str) -> str:
+    if html2text is not None:
+        try:
+            h = html2text.HTML2Text()
+            h.body_width = 0
+            h.ignore_images = False
+            h.ignore_links = False
+            return h.handle(html)
+        except Exception:
+            pass
     # Minimal stdlib fallback: strip script/style/head, turn block tags into
     # newlines, then strip remaining tags. Rough but readable.
     html = re.sub(r"(?is)<(script|style|head|noscript)\b.*?</\1>", " ", html)
@@ -174,8 +181,15 @@ def recover(url: str, timeout_s: float = TOTAL_TIMEOUT_S) -> dict:
     if remain <= 0.5:
         return envelope
     status, html = _request(snapshot_url, timeout=min(remain, timeout_s))
+    # Performance optimization: evaluate status != 200 and len(html) < 200 first
+    # to avoid allocating multi-megabyte html.lower() copies on failed or tiny responses.
+    if status != 200 or len(html) < 200:
+        envelope["status"] = status
+        envelope["summary"] = "Snapshot fetched but blocked, excluded, or empty."
+        return envelope
+
     low = html.lower()
-    if status != 200 or any(p in low for p in _BLOCK_PATTERNS) or len(html) < 200:
+    if any(p in low for p in _BLOCK_PATTERNS):
         envelope["status"] = status
         envelope["summary"] = "Snapshot fetched but blocked, excluded, or empty."
         return envelope

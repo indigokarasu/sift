@@ -177,7 +177,9 @@ def verify_run(ws: Path, run_dir: Path, critical_points: list[str]) -> dict:
     # Basic verification: check that CPs have corresponding evidence
     for i, cp in enumerate(critical_points, 1):
         cp_tag = f"cp{i}"
-        has_screenshot = any(cp_tag in s or f"critical_{i}" in s for s in screenshots_lower)
+        crit_tag = f"critical_{i}"
+        # Performance optimization: pre-format crit_tag outside generator to avoid redundant string allocations per screenshot
+        has_screenshot = any(cp_tag in s or crit_tag in s for s in screenshots_lower)
         has_log_evidence = cp_tag in log_lower
         if has_screenshot or has_log_evidence:
             results["passed"].append(f"CP{i}: {cp}")

@@ -105,7 +105,7 @@ Sift does not own: person-focused OSINT (Scout), image processing (Look), knowle
 
 ## Ontology types
 
-Sift works with these types from `spec-ocas-ontology.md`:
+Sift works with these types from [[`spec-ocas-ontology.md` ⚠️ Pending spec] ⚠️ Pending spec — not yet authored]:
 
 - **Entity/Person, Entity/AI** — people and agents identified during research.
 - **Place** — locations, venues, and organizations.
@@ -145,7 +145,7 @@ Signal example:
 }
 ```
 
-Sift may read Thread's active context for query rewriting and Weave's database for entity disambiguation (both cooperative read-only; see `spec-ocas-interfaces.md` Cooperative Query Interfaces).
+Sift may read Thread's active context for query rewriting and Weave's database for entity disambiguation (both cooperative read-only; see [[`spec-ocas-interfaces.md` ⚠️ Pending spec] ⚠️ Pending spec — not yet authored] Cooperative Query Interfaces).
 
 ## Commands
 
@@ -224,7 +224,7 @@ Extracted entities are emitted as enrichment candidates for Chronicle.
 After every Sift command that produces results:
 
 1. Persist session, entities, sources, and decisions to local JSONL files
-2. For each extracted entity or relationship with confidence >= `med`: write a Signal file to the `signal` payload field in the journal entry. Use Signal schema from `spec-ocas-shared-schemas.md`. Every Signal must include `user_relevance` (see Ontology types section). Set `"user"` if the run was user-initiated or the entity connects to a `user_relevance: "user"` Chronicle entry; otherwise `"agent_only"`.
+2. For each extracted entity or relationship with confidence >= `med`: write a Signal file to the `signal` payload field in the journal entry. Use Signal schema from [[`spec-ocas-shared-schemas.md` ⚠️ Pending spec] ⚠️ Pending spec — not yet authored]. Every Signal must include `user_relevance` (see Ontology types section). Set `"user"` if the run was user-initiated or the entity connects to a `user_relevance: "user"` Chronicle entry; otherwise `"agent_only"`.
 3. Write journal via `sift.journal`
 
 ## sift.fetch behavior

@@ -44,6 +44,9 @@ triggers:
 
 Sift is the system's general research engine, retrieving and synthesizing information from the web across a tiered source hierarchy — internal knowledge first, then free web search, then rate-limited semantic research providers for deep work. It evaluates source reliability through cross-source agreement scoring, extracts structured entities from retrieved content, and emits enrichment candidates to Chronicle so researched knowledge accumulates over time.
 
+
+**Support files:** `references/support-file-map.md` indexes the bundled files not covered inline in this skill — check it before working from assumptions about what is (not) available.
+
 ## Load-First Rule for Web-Adjacent Queries
 
 **When the user asks about products, prices, reviews, how-to advice, or any information that requires current web data, load Sift FIRST before answering from domain knowledge.** This applies even if you think you already know the answer from training data.

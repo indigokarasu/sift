@@ -98,7 +98,7 @@ Sift never performs OSINT investigations on individuals. If the primary entity o
 
 Sift owns web research, fact verification, and structured entity extraction.
 
-Sift does not own: person-focused OSINT (Scout), image processing (Look), knowledge graph writes (Elephas), pattern analysis (Corvus), social graph (Weave).
+Sift does not own: person-focused OSINT (Scout), image processing (Look), knowledge graph writes (Chronicle), pattern analysis (Corvus), social graph (Weave).
 
 ## Ontology types
 
@@ -109,7 +109,7 @@ Sift works with these types from `spec-ocas-ontology.md`:
 - **Concept/Event, Concept/Idea** — events, topics, and themes extracted from research.
 - **Thing/DigitalArtifact** — documents, articles, and digital records.
 
-Sift emits Signals to Elephas for entities and relationships extracted with confidence >= med. Signal `payload.type` is the ontology type of the primary entity. `source_journal_type` is `"Research"`. Every emitted Signal must include a `user_relevance` field.
+Sift emits Signals to Chronicle for entities and relationships extracted with confidence >= med. Signal `payload.type` is the ontology type of the primary entity. `source_journal_type` is `"Research"`. Every emitted Signal must include a `user_relevance` field.
 
 ### user_relevance field
 
@@ -123,7 +123,7 @@ Every Signal emitted by Sift carries a `user_relevance` field with one of two va
 1. The user explicitly requested the search or research (e.g., "search for X", "look up Y", or any direct user prompt that triggered the run), OR
 2. The entity has a demonstrated connection to an entity already in Chronicle with `user_relevance: "user"`.
 
-When in doubt, default to `"agent_only"`. Elephas can promote later if a user connection is established.
+When in doubt, default to `"agent_only"`. Chronicle can promote later if a user connection is established.
 
 Signal example:
 ```json
@@ -214,7 +214,7 @@ Sift maintains per-domain trust scores based on: cross-source agreement, contrad
 
 When pages are retrieved, extract: entities (with type from shared ontology), claims, statistics, relationships, citations. Each extraction includes confidence level.
 
-Extracted entities are emitted as enrichment candidates for Elephas.
+Extracted entities are emitted as enrichment candidates for Chronicle.
 
 ## Run completion
 
@@ -236,7 +236,7 @@ Sift never writes directly to Chronicle. It emits enrichment candidates via Sign
 
 ## Inter-skill interfaces
 
-Sift writes Signal files to Elephas (via journal signal payload): the `signal` payload field in the journal entry.
+Sift writes Signal files to Chronicle (via journal signal payload): the `signal` payload field in the journal entry.
 
 ## Pitfalls & Tips
 
@@ -278,7 +278,7 @@ public
 
 ## Optional skill cooperation
 
-- Elephas — emit Signal files for Chronicle promotion
+- Chronicle — emit Signal files for Chronicle promotion
 - Thread — may read recent browsing context for query rewriting
 - Weave — may use for entity disambiguation
 - Chronicle — may read for entity context

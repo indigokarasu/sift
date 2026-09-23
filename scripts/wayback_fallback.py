@@ -57,6 +57,13 @@ _BLOCK_PATTERNS = (
     "robotstxt",
 )
 
+# Cache optional brotli module import at top-level to avoid expensive sys.path module lookup
+# failures on every _decode_body invocation when brotli is absent.
+try:
+    import brotli  # type: ignore[import-untyped]  # optional; wayback sometimes brotlis
+except ImportError:
+    brotli = None  # type: ignore[assignment]
+
 
 def _decode_body(raw: bytes, encoding: str) -> bytes:
     enc = (encoding or "").lower()
@@ -69,12 +76,12 @@ def _decode_body(raw: bytes, encoding: str) -> bytes:
             except zlib.error:
                 return zlib.decompress(raw)
         if "br" in enc:
-            try:
-                import brotli  # type: ignore[import-untyped]  # optional; wayback sometimes brotlis
-
-                return brotli.decompress(raw)
-            except Exception:
-                return raw  # no brotli: leave bytes; caller degrades
+            if brotli is not None:
+                try:
+                    return brotli.decompress(raw)
+                except Exception:
+                    return raw
+            return raw  # no brotli: leave bytes; caller degrades
     except Exception:
         return raw
     return raw

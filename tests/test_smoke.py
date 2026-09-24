@@ -127,6 +127,13 @@ class TestWaybackHelpers(unittest.TestCase):
                         zlib.compress(b"data")[2:-4]):  # raw deflate stream
             self.assertEqual(wb._decode_body(variant, "deflate"), b"data")
 
+    def test_decode_body_identity(self):
+        wb = _load("wayback_fallback")
+        raw = b"<html>uncompressed content</html>"
+        self.assertEqual(wb._decode_body(raw, "identity"), raw)
+        self.assertEqual(wb._decode_body(raw, "IDENTITY"), raw)
+        self.assertEqual(wb._decode_body(raw, ""), raw)
+
     def test_decode_body_brotli_fallback(self):
         wb = _load("wayback_fallback")
         # Ensure _decode_body handles 'br' encoding safely when brotli is absent or present

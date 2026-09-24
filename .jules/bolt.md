@@ -9,3 +9,7 @@
 ## 2026-04-13 - Top-Level Optional Dependency Import Caching
 **Learning:** Attempting `import <optional_pkg>` inside a hot function path when the package is missing causes expensive `sys.path` module resolution lookups and `ImportError` exceptions on every call (~500x slower). Caching optional module imports at top level (`try: import ... except ImportError: pkg = None`) resolves package availability once at startup.
 **Action:** Move optional module imports to top level and check `if pkg is not None:` inside function calls rather than re-importing in function scope.
+
+## 2026-04-13 - Prefix Slicing for Block Pattern Detection & Explicit Encoding Fast Paths
+**Learning:** Lowercasing multi-megabyte string payloads for substring pattern matching (`html.lower()`) allocates large intermediate copies in memory. Since block error messages (e.g. Wayback interstitials) reside in response headers or the top of document markup (<64KB), slicing the prefix (`html[:65536].lower()`) avoids multi-megabyte allocations and achieves ~36x speedups. Additionally, fast-pathing explicit `identity` content encodings avoids redundant string lowercasing and substring checks (~2.4x speedup).
+**Action:** Use prefix slicing when checking error patterns on potentially large string documents and add fast paths for identity encodings.

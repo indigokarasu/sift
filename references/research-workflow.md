@@ -98,3 +98,11 @@ for r in d.get('results',[])[:10]:
 ```
 
 **Configuration:** `hermes config set SEARXNG_URL http://localhost:8888` and `hermes config set web.backend searxng`.
+
+## Quick VPS search cheat sheet
+
+- **Primary path — SearXNG** (via the `web_search` tool, or raw JSON as above):
+  `curl -s "http://localhost:8888/search?q=QUERY&format=json"`
+- **Engine health** — probe before deep queries (`references/search_tiers.md` → SearXNG engine-layer health probe); HTTP 200 alone is not coverage.
+- **Fallback — CSAPI via Reach**: check quota first (`reach.csapi_check`), then `reach.query csapi`.
+- **Last-resort free paths**: RapidAPI through Reach (`reach.query rapidapi`), then DuckDuckGo HTML (`references/ddg_html_fallback.md`).

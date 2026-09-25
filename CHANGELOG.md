@@ -1,3 +1,18 @@
+## [2.9.4] - 2026-09-24
+
+### Fixed
+- Repaired mangled text in `references/interfaces.md`, `references/user-relevance.md`, `references/query_rewrite.md`, `references/research-pipeline.md`, `references/plans/research-deep-dive.plan.md`, and this file: a botched backend rename had replaced the name "Elephas" with a pointer to a never-authored `references/integration-notes.md`
+- `scripts/csapi_quota.py --help` now exits 0 (guard placed before any state read/write); removed a dead `if False` branch in command dispatch
+- `scripts/wayback_fallback.py`: `zlib` now imported inside `_decode_body` instead of at module scope
+- `tests/test_smoke.py` + CI workflow: replaced removed `scripts/update.sh` checks with `csapi_quota.py` help / unknown-command checks
+- Restored `references/local-business-search.md` — local-business workflow via Reach (`reach.query rapidapi`) after the old file went missing
+
+### Changed
+- SKILL.md restructured for progressive disclosure: research-workflow checklist, Error Handling table, Gotchas, conditional "When to read" support map; CSAPI quota ownership now delegated to Reach, matching `references/pitfalls.md`
+- Frontmatter: `license` moved inside the first 500 chars; `metadata.hermes` (category `research`, tags) added; version 2.9.3 → 2.9.4
+- `references/escalation-pattern.md`, `references/pitfalls.md`, and `references/search_tiers.md` browser naming aligned with `references/browser-engines.md`; donsetch added as Tier 2 of the escalation chain
+- `references/support-file-map.md` rebuilt as a complete index (dropped the deleted `scripts/update.sh` row, added all current references and scripts)
+
 ## [2.8.5] - 2026-04-12
 
 ### Fixed
@@ -33,8 +48,6 @@
 - ✓ Journal output paths configured
 - ✓ Version: 2.6.0 → 2.6.1
 
-# CHANGELOG
-
 ## [2.8.1] - 2026-04-08
 
 ### Storage Architecture Update
@@ -68,7 +81,7 @@
 ## [2.5.0] - 2026-04-02
 
 ### Added
-- `user_relevance` field on all emitted See references/integration-notes.md for current backend architecture. signals (default `agent_only` for research, `user` when user-requested)
+- `user_relevance` field on all emitted Chronicle signals (default `agent_only` for research, `user` when user-requested)
 - Structured entity observations in journal payloads (`entities_observed` with relevance tags)
 
 ## 2.4.0 — 2026-03-30

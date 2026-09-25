@@ -8,22 +8,28 @@ site returns a challenge page, or before tuning tier behavior.
 ```
 Tier 1: sift.fetch (Scrapling → Jina Reader fallback)
   ↓ blocked / empty / challenge page detected
-Tier 2: sift.webwright (Playwright Firefox, standard mode)
+Tier 2: donsetch fetch (real Chrome TLS / solve-and-bounce) — for Cloudflare/
+        Akamai/DataDome/Imperva pages (references/donsetch-integration.md)
   ↓ still blocked / challenge not passing
-Tier 3: sift.webwright with stealth=true
+Tier 3: sift.webwright (Playwright, standard mode; engine selection —
+        references/browser-engines.md)
+  ↓ still blocked
+Tier 4: sift.webwright with stealth=true
   ↓ still blocked on a CONFIRMED HARD-BLOCK (404/410/451 or bot/auth wall)
-Tier 4: Wayback fallback (scripts/wayback_fallback.py) — closest archive.org
+Tier 5: Wayback fallback (scripts/wayback_fallback.py) — closest archive.org
         snapshot; marked source='archive.org', is_stale=True
   ↓ no usable snapshot
 Mark as unreachable — report to user with evidence.
 ```
 
 **Why this order:** Scrapling is near-instant and handles ~90% of sites.
-Webwright Firefox handles JS-heavy sites Scrapling can't parse. Stealth mode is
-the nuclear option — slower and more expensive, but covers the ~10% of sites
-that actively block automation. Wayback is recovery-only: it never fires on
-soft failures (429/5xx) where a retry helps, and its output is always marked
-stale so synthesis cannot mistake an old snapshot for live content.
+donsetch covers anti-bot walls Scrapling cannot (real Chrome TLS, no browser
+automation fingerprint). Webwright (Playwright driving the configured engine)
+handles JS-heavy sites Scrapling can't parse. Stealth mode is the nuclear
+option — slower and more expensive, but covers the sites that actively block
+automation. Wayback is recovery-only: it never fires on soft failures (429/5xx)
+where a retry helps, and its output is always marked stale so synthesis cannot
+mistake an old snapshot for live content.
 
 ## Detection signals (auto-escalate when observed)
 
@@ -32,7 +38,7 @@ stale so synthesis cannot mistake an old snapshot for live content.
 - Body text < 200 chars but page loads (challenge page)
 - Scrapling returns a Cloudflare/Akamai challenge HTML pattern
 
-## Tier 3 stealth mode (`sift.webwright` with `stealth: true`)
+## Stealth mode (`sift.webwright` with `stealth: true`)
 
 - Randomize user-agent, viewport, WebGL vendor, canvas fingerprint
 - Enable stealth plugins (puppeteer-extra-plugin-stealth equivalent)

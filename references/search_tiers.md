@@ -21,9 +21,9 @@ This file contains provider-specific configuration details including API keys an
 - **Provider**: Google Custom Search JSON API
 - **Quota**: Free tier (1000 queries/month)
 - **Use Case**: Fallback when free web search (SearXNG/Brave) returns insufficient results or is unavailable. Does NOT use browser automation — calls the API directly, so it is NOT affected by Google's headless browser / CAPTCHA blocks. Works reliably from datacenter/VPS IPs.
-- **Tool**: `mcp_google_workspace_search_custom` (via google-workspace MCP — already configured)
+- **Tool**: `mcp_google_workspace_search_custom` (via google-workspace MCP — already configured). **Route through Reach**: call `reach.query csapi` — Sift does not call the MCP tool or manage quota directly (see `references/pitfalls.md` → Source delegation).
 - **Open Web Search**: Omit `site_search` parameter to search the entire web. Works identically to a normal Google search for open web queries.
-- **Quota Tracking**: Tracked by `scripts/csapi_quota.py`. Auto-resets on calendar month. Check before calling; increment after each call.
+- **Quota Tracking**: Tracked by `scripts/csapi_quota.py` — day-to-day checks are delegated to Reach (`reach.csapi_check` before, `reach.csapi_increment` after); the script below is the underlying counter for inspection. Auto-resets on calendar month. Check before calling; increment after each call.
   - `python3 ~/.hermes/skills/ocas-sift/scripts/csapi_quota.py check` — exit 0 if quota available, 1 if exhausted
   - `python3 ~/.hermes/skills/ocas-sift/scripts/csapi_quota.py increment` — record one query
   - `python3 ~/.hermes/skills/ocas-sift/scripts/csapi_quota.py status` — JSON dump of current usage
@@ -41,7 +41,7 @@ This file contains provider-specific configuration details including API keys an
 
 - The `google-search` MCP (Playwright + Chromium browser scraper) has been **disabled** in the Hermes config.
 - Google permanently blocks datacenter/VPS IPs via CAPTCHA when using browser automation. This cannot be fixed with proxies or fingerprint changes.
-- Use CSAPI (`mcp_google_workspace_search_custom`) instead for reliable open web search from this VPS.
+- Use CSAPI via Reach (`reach.query csapi`, quota check first) instead for reliable open web search from this VPS.
 
 ## Updated Search Pipeline
 
@@ -71,12 +71,12 @@ When performing deep dives on individuals (researchers, executives, engineers) a
 ## Webwright — Interactive Browser Agent
 
 - **Package**: `webwright` (pip), `playwright` (already installed)
-- **Browser**: Firefox (headless) — handles sites that reject Chromium via TLS/H2 fingerprinting
+- **Browser**: system Chrome via `channel="chrome"` (already installed; no download). Engine selection — Obscura over CDP when available, Chrome fallback — is documented in `references/browser-engines.md`.
 - **Use when**: Form filling, multi-step flows, JS-heavy sites, interactive filtering, tasks requiring browser state
 - **Not for**: Simple lookups (use `sift.search`) or URL extraction (use `sift.fetch`)
 - **Workspace**: `{agent_root}/commons/data/ocas-sift/webwright/`
 - **Reference**: `references/webwright-integration.md`
-- **Setup**: `pip install webwright` (already installed), `playwright install firefox`
+- **Setup**: `pip install playwright` (already installed) — no browser download needed, Chrome is already on the host
 
 ## Reverse Image Search
 
@@ -87,11 +87,28 @@ When performing deep dives on individuals (researchers, executives, engineers) a
 
 ## Pitfalls & Tips
 
-- **CAPTCHA cascade from VPS/cloud IPs**: The Playwright-based google-search MCP will be blocked by Google CAPTCHA from datacenter addresses. Do not retry — it will not self-resolve. Use the Server Custom Search API (`mcp_google_workspace_search_custom`) or SearXNG (`curl` to `http://localhost:8888`) instead.
+- **CAPTCHA cascade from VPS/cloud IPs**: The Playwright-based google-search MCP will be blocked by Google CAPTCHA from datacenter addresses. Do not retry — it will not self-resolve. Use CSAPI via Reach (`reach.query csapi`) or SearXNG (`curl` to `http://localhost:8888`) instead.
 - **Semantic Scholar rate limits**: Batch requests to avoid 429 errors.
 - **LinkedIn auth walls**: Status 999 = profile exists but is bot-blocked.
 - **Google Developer profiles**: Generic content for all usernames. Not reliable.
 - **GitHub name ambiguity**: Cross-reference with commit emails for disambiguation.
 - **ORCID name matching**: Verify by checking `given-names`/`family-names` fields.
 - **Verify Identity**: Confirm roles in large collaborations (e.g., author lists).
+
+## SearXNG engine-layer health probe
+
+A `format=json` response with HTTP 200 does not mean the search worked — most engines may be CAPTCHA'd or rate-limited while the instance itself answers fine. Sample which engines actually contribute before concluding a topic is unfindable:
+
+```bash
+curl -s "$SEARXNG_URL/search?q=test&format=json" | python3 -c "
+import json,sys
+d=json.load(sys.stdin)
+print('contributing:', sorted({e for r in d.get('results',[]) for e in r.get('engines',[])}))
+print('failing:     ', [u[0] for u in d.get('unresponsive_engines',[])])
+"
+```
+
+- Healthy output shows several contributing engines and few failures.
+- `failing:` dominated by CAPTCHA / 403 entries means rephrasing will not help — escalate to CSAPI via Reach or primary-source APIs (`references/primary_source_research.md`).
+- Requires `SEARXNG_URL` in the environment: `hermes config set SEARXNG_URL http://localhost:8888`.
 

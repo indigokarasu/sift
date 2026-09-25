@@ -223,9 +223,9 @@ so there is no per-skill update job.
 
 ## Updates
 
-Updates are centralized: the `skills:update-fleet` cron pulls the latest from
-`source:` via `scripts/update_skill.sh`, which never discards uncommitted local
-work. There is no per-skill update script, and updates never touch
+Updates are centralized: the `skills:update-fleet` cron runs a shared fleet
+updater that pulls the latest from `source:` and never discards uncommitted
+local work. There is no per-skill update script, and updates never touch
 `{agent_root}/commons/` data or journals.
 
 ## Visibility

@@ -21,6 +21,7 @@ Two accounts are configured. The `gsearch/search_tools.py` has been patched to a
 
 ## Quota
 
+- **Delegation note:** day-to-day CSAPI quota checks are owned by Reach — call `reach.csapi_check` before and `reach.csapi_increment` after a CSAPI query (see `references/pitfalls.md` → Source delegation). This file documents the provider setup and the standalone counter script kept for inspection and offline repair.
 - **Free tier**: 1,000 queries/month **per account**
 - **Tracking script**: `scripts/csapi_quota.py`
 - **State file**: `~/.hermes/commons/data/ocas-sift/csapi_quota.json`
@@ -60,6 +61,6 @@ The Playwright-based `google-search` MCP has been disabled. Google permanently b
 
 ## See Also
 
-- `google-workspace-auth/references/csapi-setup.md` — How CSAPI works, prerequisites, and troubleshooting
+- **OAuth / workspace-mcp setup** — load the `google-workspace` skill for credential-store and scope guidance; CSAPI needs the `https://www.googleapis.com/auth/cse` scope on the workspace-mcp token
 - `search_tiers.md` — Full search tier chain and provider details
 - `research-workflow.md` — Cloud environment fallback workflow

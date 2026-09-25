@@ -75,6 +75,6 @@ steps:
 - `content`: `{{steps.depth-pass.depth_summary}}`
 
 **Outputs:**
-- `entity_list`: extracted entities and relationships, emitted to See references/integration-notes.md for current backend architecture.
+- `entity_list`: extracted entities and relationships, emitted to Chronicle
 
 **On failure:** skip

@@ -6,12 +6,12 @@ Don't answer product/how-to/recommendation questions from training data alone. U
 
 ## CAPTCHA cascade
 
-From cloud environments (VPS, cloud VMs), ALL major search engines block headless browsers. Google, Bing, DuckDuckGo, Yelp, Reddit — all return CAPTCHAs or 403s. Use the `web_search` tool (SearXNG plugin) as the primary search source — it routes through the Hermes plugin registry to your SearXNG instance automatically.
+From cloud environments (VPS, cloud VMs), most major search engines block headless browsers — Google is the most aggressive (CAPTCHA on every attempt), and Yelp/Reddit return 403s. Use the `web_search` tool (SearXNG plugin) as the primary search source — it routes through the Hermes plugin registry to your SearXNG instance automatically.
 
 **If `web_search` returns "SEARXNG_URL is not set"**: the env var isn't in the right `.env` file. Fix: `hermes config set SEARXNG_URL http://localhost:8888`.
 
 **If SearXNG is also down** (empty response or connection refused), escalate to CSAPI or RapidAPI:
-- CSAPI: `mcp_google_workspace_search_custom` (quota-managed, 1000 queries/month free)
+- CSAPI: route through Reach — `reach.csapi_check` first, then `reach.query csapi` (1,000 queries/month free per account)
 - **RapidAPI** — general-purpose API marketplace (203 endpoints). Route through Reach via `reach.query rapidapi`. For API discovery, health checks, and subscription management, load the `rapidapi` skill.
 
 ## web_search tool routes through plugins
@@ -50,10 +50,10 @@ When fetching URLs from VPS/cloud IPs, anti-bot systems (Cloudflare, Akamai, Dat
 
 1. `sift.fetch` (Scrapling → Jina) — handles 90% of sites, near-instant
 2. `donsetch fetch` (real Chrome TLS / solve-and-bounce, `/usr/local/bin/donsetch` v3.2.3, AGPL) — when `sift.fetch` returns bot-wall / 403 / empty / CAPTCHA on CF/Akamai/DataDome/Imperva pages (see `references/donsetch-integration.md`). Not a tier-1/2 replacement; tier-3 anti-bot escalation only.
-3. `sift.webwright` (Playwright Firefox) — handles JS-heavy interactive sites
+3. `sift.webwright` (Playwright; engine chosen at run time — see `references/browser-engines.md`) — handles JS-heavy interactive sites
 4. `sift.webwright` with `stealth: true` — fingerprint randomization + challenge wait, for protected sites
 
-Auto-escalate when: HTTP 403, "Just a moment…" title, body < 200 chars on a loaded page, or challenge HTML detected. See "Browsing Escalation Chain" section in SKILL.md for full details.
+Auto-escalate when: HTTP 403, "Just a moment…" title, body < 200 chars on a loaded page, or challenge HTML detected. See `references/escalation-pattern.md` for the full chain and detection signals.
 
 ## Surface-depth trap ("try harder" pattern)
 
@@ -118,7 +118,7 @@ When a user points at an external repo/tool and says "borrow/port/reuse X from i
 
 ## Git pull fails with untracked file conflicts
 
-When running `sift.update` (or manually pulling updates on a hub-installed skill), `git pull` may abort with:
+When a fleet update (or a manual `git pull` on a hub-installed skill) runs, `git pull` may abort with:
 
 ```
 error: The following untracked working tree files would be overwritten by merge:

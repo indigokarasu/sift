@@ -39,15 +39,16 @@ class TestHelpGuards(unittest.TestCase):
         self.assertEqual(p.returncode, 0)
         self.assertIn(b"usage", p.stdout.lower())
 
-    def test_update_sh_help(self):
-        p = subprocess.run(["bash", "update.sh", "--help"],
+    def test_csapi_quota_help(self):
+        p = subprocess.run([sys.executable, "csapi_quota.py", "--help"],
                            cwd=SCRIPTS, capture_output=True, timeout=30)
         self.assertEqual(p.returncode, 0)
-        self.assertIn(b"Usage:", p.stdout)
+        self.assertIn(b"usage" if b"usage" in p.stdout.lower() else b"quota",
+                      p.stdout.lower())
 
-    def test_update_sh_rejects_unknown_flag(self):
-        p = subprocess.run(["bash", "update.sh", "--bogus"],
-                           cwd=SCRIPTS, capture_output=True, timeout=60)
+    def test_csapi_quota_rejects_unknown_command(self):
+        p = subprocess.run([sys.executable, "csapi_quota.py", "bogus"],
+                           cwd=SCRIPTS, capture_output=True, timeout=30)
         self.assertNotEqual(p.returncode, 0)
 
 

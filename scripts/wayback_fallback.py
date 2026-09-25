@@ -38,7 +38,6 @@ import json
 import re
 import sys
 import time
-import zlib
 
 import urllib.error
 import urllib.parse
@@ -64,6 +63,8 @@ def _decode_body(raw: bytes, encoding: str) -> bytes:
         if "gzip" in enc:
             return gzip.decompress(raw)
         if "deflate" in enc:
+            import zlib  # stdlib; imported here so --help never needs it at module scope
+
             try:
                 return zlib.decompress(raw, -zlib.MAX_WBITS)
             except zlib.error:

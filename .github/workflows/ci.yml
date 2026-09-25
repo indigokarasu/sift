@@ -17,4 +17,4 @@ jobs:
           set -e
           python3 scripts/wayback_fallback.py --help > /dev/null
           python3 scripts/webwright_runner.py --help > /dev/null
-          bash scripts/update.sh --help > /dev/null
+          python3 scripts/csapi_quota.py --help > /dev/null

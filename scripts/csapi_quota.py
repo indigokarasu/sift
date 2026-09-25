@@ -18,6 +18,8 @@ Usage:
     python3 csapi_quota.py all                      # Print all accounts status
 
     Omit [account] to apply to all accounts.
+
+    -h, --help                                      # Show this help and exit 0
 """
 
 import json
@@ -178,8 +180,14 @@ COMMANDS = {
 
 
 if __name__ == "__main__":
+    # --help guard: FIRST executable branch, before any state read/write.
+    if "--help" in sys.argv or "-h" in sys.argv:
+        print((__doc__ or "").strip())
+        print(f"\nCommands: {', '.join(COMMANDS)}")
+        sys.exit(0)
+
     if len(sys.argv) < 2 or sys.argv[1] not in COMMANDS:
-        print(__doc__.strip())
+        print((__doc__ or "").strip())
         print(f"\nCommands: {', '.join(COMMANDS)}")
         sys.exit(2)
 
@@ -198,4 +206,4 @@ if __name__ == "__main__":
     if cmd == "increment":
         cmd_increment(account, n)
     else:
-        cmd_increment(account, n) if False else COMMANDS[cmd](account)
+        COMMANDS[cmd](account)

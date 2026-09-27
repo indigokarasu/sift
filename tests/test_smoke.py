@@ -73,6 +73,18 @@ class TestCSAPIQuotaHelpers(unittest.TestCase):
         self.assertEqual(len(state["owner"]["history"]), 1)
         self.assertEqual(state["owner"]["history"][0]["queries"], 50)
 
+    def test_csapi_quota_status(self):
+        p = subprocess.run([sys.executable, "csapi_quota.py", "status", "owner"],
+                           cwd=SCRIPTS, capture_output=True, text=True, timeout=30)
+        self.assertEqual(p.returncode, 0)
+        self.assertIn('"remaining": 1000', p.stdout)
+
+        p_all = subprocess.run([sys.executable, "csapi_quota.py", "status", "all"],
+                               cwd=SCRIPTS, capture_output=True, text=True, timeout=30)
+        self.assertEqual(p_all.returncode, 0)
+        self.assertIn('"owner":', p_all.stdout)
+        self.assertIn('"indigo":', p_all.stdout)
+
 
 class TestWebwrightHelpers(unittest.TestCase):
     def test_next_run_id(self):

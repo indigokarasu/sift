@@ -88,7 +88,7 @@ Specific use cases:
 
 - OSINT investigations on individuals — use Scout
 - Image-to-action processing — use Look
-- Pattern analysis on the knowledge graph — use Corvus
+- Cross-session behavioral analysis outside research scope — use the current system-evolution owners
 - Communications and message drafting — use Dispatch
 
 Sift never performs OSINT investigations on individuals. If the primary entity of a query is a person, Scout should be invoked.
@@ -97,7 +97,7 @@ Sift never performs OSINT investigations on individuals. If the primary entity o
 
 Sift owns web research, fact verification, and structured entity extraction.
 
-Sift does not own: person-focused OSINT (Scout), image processing (Look), knowledge graph writes (Elephas), pattern analysis (Corvus), social graph (Weave).
+Sift does not own: person-focused OSINT (Scout), image processing (Look), durable Chronicle writes, cross-session behavioral adaptation, or the social graph (Weave).
 
 ## Ontology types
 
@@ -108,7 +108,7 @@ Sift works with these types from `spec-ocas-ontology.md`:
 - **Concept/Event, Concept/Idea** — events, topics, and themes extracted from research.
 - **Thing/DigitalArtifact** — documents, articles, and digital records.
 
-Sift emits Signals to Elephas for entities and relationships extracted with confidence >= med. Signal `payload.type` is the ontology type of the primary entity. `source_journal_type` is `"Research"`. Every emitted Signal must include a `user_relevance` field.
+Sift emits principal-scoped Signals/DerivedClaims in its own research journal for entities and relationships extracted with confidence >= med. `payload.type` is the ontology type of the primary entity, `source_journal_type` is `"Research"`, and every candidate carries explicit `target_principal`, `claim_state`, provenance, and `user_relevance`.
 
 ### user_relevance field
 
@@ -190,14 +190,14 @@ Sift maintains per-domain trust scores based on: cross-source agreement, contrad
 
 When pages are retrieved, extract: entities (with type from shared ontology), claims, statistics, relationships, citations. Each extraction includes confidence level.
 
-Extracted entities are emitted as enrichment candidates for Elephas.
+Extracted entities are emitted as principal-scoped enrichment candidates for sanctioned Chronicle ingestion.
 
 ## Run completion
 
 After every Sift command that produces results:
 
 1. Persist session, entities, sources, and decisions to local JSONL files
-2. For each extracted entity or relationship with confidence >= `med`: write a Signal file to the `signal` payload field in the journal entry. Use Signal schema from `spec-ocas-shared-schemas.md`. Every Signal must include `user_relevance` (see Ontology types section). Set `"user"` if the run was user-initiated or the entity connects to a `user_relevance: "user"` Chronicle entry; otherwise `"agent_only"`.
+2. For each extracted entity or relationship with confidence >= `med`: write a principal-scoped Signal/DerivedClaim to the journal entry's candidate payload. Use Signal schema from `spec-ocas-shared-schemas.md`. Every Signal must include `user_relevance` (see Ontology types section). Set `"user"` if the run was user-initiated or the entity connects to a `user_relevance: "user"` Chronicle entry; otherwise `"agent_only"`.
 3. Write journal via `sift.journal`
 
 ## sift.fetch behavior
@@ -208,11 +208,11 @@ Do not use `sift.fetch` for general search — it fetches a specific known URL o
 
 ## Chronicle interaction
 
-Sift never writes directly to Chronicle. It emits enrichment candidates via Signal files.
+Sift never opens or mutates Chronicle storage directly. It emits principal-scoped enrichment candidates in its journal for sanctioned Chronicle ingestion.
 
 ## Inter-skill interfaces
 
-Sift writes Signal files to Elephas (via journal signal payload): the `signal` payload field in the journal entry.
+Sift writes enrichment candidates only to its own journal/interface payloads; Chronicle ingestion is handled through the sanctioned memory contract.
 
 ## Pitfalls & Tips
 
@@ -258,7 +258,7 @@ public
 
 ## Optional skill cooperation
 
-- Elephas — emit Signal files for Chronicle promotion
+- Chronicle — sanctioned ingestion target for principal-scoped research candidates
 - Thread — may read recent browsing context for query rewriting
 - Weave — may use for entity disambiguation
 - Chronicle — may read for entity context

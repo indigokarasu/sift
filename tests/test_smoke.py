@@ -158,6 +158,22 @@ class TestWaybackHelpers(unittest.TestCase):
         # fallback fires on soft failures, its documented anti-pattern.
         self.assertTrue(len(wb._BLOCK_PATTERNS) > 0)
 
+    def test_html_to_markdown_stdlib_fallback(self):
+        wb = _load("wayback_fallback")
+        # Force stdlib fallback mode by temporarily unsetting html2text
+        old_html2text = wb.html2text
+        try:
+            wb.html2text = None
+            sample_html = "<html><head><script>var x = 1;</script></head><body><h1>Title</h1><p>Para line 1<br/>line 2</p></body></html>"
+            res = wb._html_to_markdown(sample_html)
+            self.assertIn("Title", res)
+            self.assertIn("Para line 1", res)
+            self.assertIn("line 2", res)
+            self.assertNotIn("<script>", res)
+            self.assertEqual(res, res.strip())
+        finally:
+            wb.html2text = old_html2text
+
 
 if __name__ == "__main__":
     unittest.main()

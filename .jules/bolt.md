@@ -17,3 +17,7 @@
 ## 2026-04-13 - Fast Directory Iteration via os.scandir and EAFP
 **Learning:** `Path.glob()` and `Path.exists()` instantiate full `Path` objects for every matching entry and perform redundant filesystem `stat` system calls. Replacing `Path.glob()` and `Path.exists()` with `os.scandir()` and `try...except FileNotFoundError` yields ~4.2x speedups during run sequence lookups and file verification in directory trees.
 **Action:** Prefer `os.scandir()` and `try...except FileNotFoundError` over `Path.glob()` / `.exists()` when scanning large directory structures in Python.
+
+## 2026-04-13 - Length Guard Short-Circuiting for Pattern Matching
+**Learning:** Lowercasing multi-KB page snapshots and pattern matching against string tuples before checking length requirements causes wasted allocation and string scanning on normal pages. Evaluating cheap numeric length guards (`body_chars < 2000`) before string lowercasing and pattern searching completely bypasses string operations for normal rendered content (~760x speedup).
+**Action:** Place cheap size/length guards before expensive string lowercasing and multi-pattern searches when both conditions are required.

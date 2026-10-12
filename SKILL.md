@@ -4,16 +4,14 @@ license: MIT
 source: https://github.com/indigokarasu/sift
 warning: 'FALSE TRIGGER RISK: high false-trigger rate on interactive loads — often pulled in for repo/push clarification or unrelated resource questions instead of structured research. Do NOT load for those; use clarification + ocas-reach instead.'
 description: >-
-  Sift: web search, research synthesis, fact verification, entity extraction, and
-  URL content extraction — the system's general research engine. Use for any task
-  requiring current web information: search, research, look up, investigate, find
-  out, check if, fact check, compare, summarize, what is, how to, product
-  recommendations, price checks, current events, or reading a specific URL.
-  TRIGGER ON: any question needing current web data, or an "investigate/find
-  out/check/look into" request. Do NOT use the browser for search (CAPTCHA'd on
-  VPS); the `web_search`/`web_extract` MCP tools route to SearXNG automatically —
-  load this skill directly for deep research. NOT for person-focused OSINT (use
-  Scout) or image processing (use Look).
+  NOT for repo/push clarification or unrelated resource questions. Sift: web
+  search, research synthesis, fact verification, entity extraction, URL
+  extraction - the general research engine. Use for any task needing current
+  web information (search, research, investigate, fact-check, compare, read a
+  specific URL). Guard front-loaded to the 57-char router window on 2026-10-11
+  (ocas-sift: high (unquantified) false-trigger rate). Use clarification plus
+  ocas-reach for repo/push questions.
+
 includes:
 - references/**
 - scripts/**

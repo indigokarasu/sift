@@ -21,3 +21,7 @@
 ## 2026-04-13 - Length Guard Short-Circuiting for Pattern Matching
 **Learning:** Lowercasing multi-KB page snapshots and pattern matching against string tuples before checking length requirements causes wasted allocation and string scanning on normal pages. Evaluating cheap numeric length guards (`body_chars < 2000`) before string lowercasing and pattern searching completely bypasses string operations for normal rendered content (~760x speedup).
 **Action:** Place cheap size/length guards before expensive string lowercasing and multi-pattern searches when both conditions are required.
+
+## 2026-04-13 - Pre-Joined String Delimitation for Batch Substring Searches
+**Learning:** Evaluating generator expressions with substring checks over list collections (`any(tag in s for s in list)`) inside outer iteration loops causes O(M * N) list traversals and generator allocations. Joining string collections into a single newline-delimited text blob (`"\n".join(items)`) outside the outer loop reduces verification checks to fast C-level string containment checks (`tag in joined_text`), yielding ~1.8x speedups.
+**Action:** Pre-join string collections with newlines when checking substring membership across multi-item lists in verification loops.

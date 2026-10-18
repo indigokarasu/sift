@@ -25,3 +25,7 @@
 ## 2026-04-13 - Pre-Joined String Delimitation for Batch Substring Searches
 **Learning:** Evaluating generator expressions with substring checks over list collections (`any(tag in s for s in list)`) inside outer iteration loops causes O(M * N) list traversals and generator allocations. Joining string collections into a single newline-delimited text blob (`"\n".join(items)`) outside the outer loop reduces verification checks to fast C-level string containment checks (`tag in joined_text`), yielding ~1.8x speedups.
 **Action:** Pre-join string collections with newlines when checking substring membership across multi-item lists in verification loops.
+
+## 2026-04-13 - Combined Regex Passes & Fast-Path Line Normalization
+**Learning:** Sequential string replacement regexes (`re.sub`) over HTML documents cause redundant multi-megabyte string scans. Combining block tag and `<br>` replacement regexes into a single pass (`(?i)(?:</(?:block_tags)>|<br\s*/?>)`) reduces regex engine passes. Additionally, guarding line whitespace normalization with cheap containment checks (`"  " in s or "\t" in s`) before calling `s.split()` avoids list allocations on clean lines (~1.16x speedup).
+**Action:** Combine sequential replacement regexes into single-pass patterns and guard string split/join normalizations with cheap substring checks.

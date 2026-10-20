@@ -8,6 +8,9 @@ site returns a challenge page, or before tuning tier behavior.
 ```
 Tier 1: sift.fetch (Scrapling → Jina Reader fallback)
   ↓ blocked / empty / challenge page detected
+Tier 1.5: TinyFish fetch — free, renders JS, works from cloud IPs without CAPTCHA.
+        Sift escalates here automatically before donsetch/webwright.
+  ↓ still blocked / challenge not passing
 Tier 2: donsetch fetch (real Chrome TLS / solve-and-bounce) — for Cloudflare/
         Akamai/DataDome/Imperva pages (references/donsetch-integration.md)
   ↓ still blocked / challenge not passing
@@ -37,6 +40,7 @@ mistake an old snapshot for live content.
 - Page title contains "Just a moment…" / "Attention Required" / "Access denied"
 - Body text < 200 chars but page loads (challenge page)
 - Scrapling returns a Cloudflare/Akamai challenge HTML pattern
+- TinyFish fetch returns empty body or challenge page → escalate to donsetch
 
 ## Stealth mode (`sift.webwright` with `stealth: true`)
 

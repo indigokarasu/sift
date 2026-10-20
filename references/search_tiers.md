@@ -37,6 +37,14 @@ This file contains provider-specific configuration details including API keys an
   - Structured results with title, link, snippet — comparable output to browser scraping.
   - **DO NOT use the Playwright-based `google-search` MCP** (disabled in config). Google blocks all datacenter IPs via CAPTCHA when using browser automation. CSAPI is the correct replacement.
 
+## TinyFish MCP (Free search & extract — automatic, internal to Sift)
+
+- **No API key required beyond `MCP_TINYFISH_API_KEY`** — already configured in Hermes via `tinyfish connect hermes`. Managed entirely by Sift.
+- **Search**: TinyFish fires automatically as part of Sift's parallel fan-out when current web data is needed and free search is insufficient. Returns structured results with title/url/snippet/position. Good for current web data from datacenter IPs (no CAPTCHA).
+- **Fetch**: When sift.fetch hits a blocked/CAPTCHA page, Sift automatically escalates to TinyFish fetch before donsetch. Free, up to 10 URLs per call, renders JS.
+- **You never call TinyFish by name** — Sift invokes it internally as needed across both search and fetch tiers.
+- **Not metered**: Search and fetch are free. Automation (`run_web_automation`) is metered and not used for simple reads.
+
 ## Playwright Browser Search (DEPRECATED / DISABLED)
 
 - The `google-search` MCP (Playwright + Chromium browser scraper) has been **disabled** in the Hermes config.

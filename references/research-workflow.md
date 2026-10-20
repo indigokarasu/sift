@@ -21,7 +21,11 @@ Before anything else, try one `mcp_tavily_tavily_search` call. If it returns a 4
 
 When all web search services are credit-limited AND major search engines (Google, Bing) return CAPTCHA pages from cloud IPs, use this specific API stack in order:
 
-### 1. GitHub API (no auth required, curl-based)
+### 1. TinyFish search — free, no CAPTCHA from cloud IPs
+
+Sift invokes TinyFish search automatically when free search services are credit-limited and major search engines return CAPTCHA pages from cloud IPs. Returns structured results with title/url/snippet/position. You never call it by name.
+
+### 2. GitHub API (no auth required, curl-based)
 
 - User search: `curl -s "https://api.github.com/search/users?q=FULLNAME"`
 - Commit search by email: `curl -s "https://api.github.com/search/commits?q=author-email:EMAIL"`
@@ -103,6 +107,7 @@ for r in d.get('results',[])[:10]:
 
 - **Primary path — SearXNG** (via the `web_search` tool, or raw JSON as above):
   `curl -s "http://localhost:8888/search?q=QUERY&format=json"`
+- **TinyFish** — automatic internal tier; fires when SearXNG/CSAPI are insufficient or blocked. You never call it by name.
 - **Engine health** — probe before deep queries (`references/search_tiers.md` → SearXNG engine-layer health probe); HTTP 200 alone is not coverage.
 - **Fallback — CSAPI via Reach**: check quota first (`reach.csapi_check`), then `reach.query csapi`.
 - **Last-resort free paths**: RapidAPI through Reach (`reach.query rapidapi`), then DuckDuckGo HTML (`references/ddg_html_fallback.md`).

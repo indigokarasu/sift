@@ -8,6 +8,7 @@ All configured search sources fire in parallel. Results are deduplicated by URL 
   - **Brave Search API** — structured web results. See `references/search_tiers.md` for provider configuration and API keys.
   - **SearXNG** — self-hosted instance. See `references/search_tiers.md` for provider configuration and API keys. **Deduplication gate:** if self-hosted SearXNG responds, skip the N2 MCP call — both are SearXNG-backed and results would duplicate.
   - **Platform search** — agent-reach on Twitter/X (via Mirror Rotator → Search Bridge), Reddit, LinkedIn, GitHub, etc.
+- **TinyFish** — free search and fetch via TinyFish MCP. Configured in Hermes config as `search_backend: tinyfish`. Fires automatically in parallel with the above — Sift invokes it internally; you never call it by name.
 - **Semantic research** — Exa, Tavily. Deep research only. Quota-limited (~50 calls/day combined). Runs when standard web search is insufficient.
 
 For detailed tier-by-tier workflow, API curl examples, and cloud environment fallbacks, read `references/research-workflow.md`.

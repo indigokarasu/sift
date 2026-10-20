@@ -138,7 +138,7 @@ Users may override with "quick answer", "deep dive", "compare", or "summarize".
 All configured sources fire in parallel; results are deduplicated by URL and content hash.
 
 - **Internal knowledge** — LLM knowledge, conversation context, Chronicle if available. Always runs first as a pre-check.
-- **Free web search (parallel fan-out)** — N2 MCP (`n2_web_search`, SearXNG-backed, plus `n2_news_search`), Brave Search API, SearXNG (`localhost:8888` — the primary source on VPS), platform search (X/Reddit/LinkedIn/GitHub via agent-reach). Provider config and API keys: `references/search_tiers.md`.
+- **Free web search (parallel fan-out)** — N2 MCP (`n2_web_search`, SearXNG-backed, plus `n2_news_search`), Brave Search API, SearXNG (`localhost:8888` — the primary source on VPS), platform search (X/Reddit/LinkedIn/GitHub via agent-reach), **TinyFish** — free search and fetch via TinyFish MCP. Provider config and API keys: `references/search_tiers.md`.
 - **CSAPI (Google Custom Search JSON API)** — fallback when free search is insufficient. Route through Reach (`reach.query csapi`); quota is owned by Reach (`reach.csapi_check` before, `reach.csapi_increment` after) — Sift does not manage CSAPI quota or MCP connections itself. Provider details: `references/csapi-quota.md`.
 
 SearXNG can answer HTTP 200 while most engines are CAPTCHA'd or rate-limited, so one call is a narrow sample, not coverage. Before concluding a topic is unfindable, check which engines actually contributed (probe in `references/search_tiers.md`); a degraded engine layer means rephrasing will not help — go to primary sources (`references/primary_source_research.md`). Detailed tier-by-tier workflow and cloud fallbacks: `references/research-workflow.md`.
@@ -195,6 +195,7 @@ Read `references/pitfalls.md` for the full list. Key highlights:
 - **CAPTCHA cascade:** from cloud IPs most engines block automated browsers, but not uniformly — Google serves an "unusual traffic" page to the system Chrome while Bing may answer normally. Prefer SearXNG/CSAPI, and check pages for CAPTCHA markers before declaring a subject unfindable.
 - **Surface-depth trap:** getting a name or title is step 1, not the deliverable — if you cannot say what the content says, the research is unfinished.
 - **Credential sanitizer:** the Hermes output sanitizer intercepts API keys; the owner must add CSAPI keys manually.
+- **TinyFish for auth-walled platforms:** when `fetch_page()` returns no content from auth-walled sites (LinkedIn, Twitter/X, Facebook, Instagram, TikTok), escalate to TinyFish stealth browser fetch before falling back to title/snippet only. TinyFish sessions cost ~$0.002/min; ~30s per page. Always verify extracted identity (name match) before accepting data from auth-walled sources — platforms serve generic/auth-wall content behind login walls.
 
 ## Support file map
 

@@ -116,6 +116,14 @@ When a user points at an external repo/tool and says "borrow/port/reuse X from i
 - The repo description advertises something its CHANGELOG says was deleted
 - Stale references to the feature remain in code that no longer compiles against it
 
+## Python-to-JavaScript script generation: f-string quoting
+
+When generating JavaScript code via Python f-strings, `{variable}` interpolation can silently wrap the variable's value in quotes if the f-string uses `{{`/`}}` for surrounding braces. This produces invalid JavaScript (`() => {'code here'}` instead of `() => { code here }`).
+
+**The rule:** Use string concatenation (`f.write("        " + js_code + "\n")`) instead of f-string interpolation for injecting code blocks into generated scripts. Reserve f-strings only for simple variable substitution (URLs, paths) where the value is a scalar.
+
+**Detection:** generated script returns "FAILED" or "undefined" with no JS error — the code was treated as a string literal, not executed.
+
 ## Git pull fails with untracked file conflicts
 
 When a fleet update (or a manual `git pull` on a hub-installed skill) runs, `git pull` may abort with:

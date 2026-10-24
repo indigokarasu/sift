@@ -29,3 +29,7 @@
 ## 2026-04-13 - Combined Regex Passes & Fast-Path Line Normalization
 **Learning:** Sequential string replacement regexes (`re.sub`) over HTML documents cause redundant multi-megabyte string scans. Combining block tag and `<br>` replacement regexes into a single pass (`(?i)(?:</(?:block_tags)>|<br\s*/?>)`) reduces regex engine passes. Additionally, guarding line whitespace normalization with cheap containment checks (`"  " in s or "\t" in s`) before calling `s.split()` avoids list allocations on clean lines (~1.16x speedup).
 **Action:** Combine sequential replacement regexes into single-pass patterns and guard string split/join normalizations with cheap substring checks.
+
+## 2026-04-13 - Post-Join Batch String Lowercasing
+**Learning:** Lowercasing list items via generator expressions before joining (`"\n".join(s.lower() for s in items)`) incurs generator evaluation overhead and per-string function calls. Joining items first and calling `.lower()` once on the joined string (`"\n".join(items).lower()`) shifts string lowercasing into C-level standard library execution, yielding ~3.3x speedups.
+**Action:** Join string sequences before applying uniform string lowercasing transformations when preparing text blobs for pattern search.

@@ -33,3 +33,7 @@
 ## 2026-04-13 - Post-Join Batch String Lowercasing
 **Learning:** Lowercasing list items via generator expressions before joining (`"\n".join(s.lower() for s in items)`) incurs generator evaluation overhead and per-string function calls. Joining items first and calling `.lower()` once on the joined string (`"\n".join(items).lower()`) shifts string lowercasing into C-level standard library execution, yielding ~3.3x speedups.
 **Action:** Join string sequences before applying uniform string lowercasing transformations when preparing text blobs for pattern search.
+
+## 2026-04-13 - Inline Blank-Line Collapsing & Post-Pass Regex Elimination
+**Learning:** Appending empty line strings for every blank line during HTML line iteration creates large lists with thousands of redundant empty string objects and requires a post-join regular expression pass (`re.sub(r"\n{3,}", "\n\n", html)`). Capping consecutive blank lines inline (`blank_count <= 1`) during iteration prevents triple newlines (`\n\n\n`) from ever being constructed, eliminating peak memory allocations for redundant string objects and avoiding post-pass regex scans entirely (~1.15x–1.23x speedup).
+**Action:** Collapse consecutive delimiter lines inline during split iteration to prevent over-generation and eliminate downstream regex cleanup passes.

@@ -85,6 +85,39 @@ class TestCSAPIQuotaHelpers(unittest.TestCase):
         self.assertIn('"owner":', p_all.stdout)
         self.assertIn('"indigo":', p_all.stdout)
 
+    def test_csapi_quota_remaining_cli(self):
+        p = subprocess.run([sys.executable, "csapi_quota.py", "remaining", "owner"],
+                           cwd=SCRIPTS, capture_output=True, text=True, timeout=30)
+        self.assertEqual(p.returncode, 0)
+        self.assertIn("owner:", p.stdout)
+
+        p_all = subprocess.run([sys.executable, "csapi_quota.py", "remaining"],
+                               cwd=SCRIPTS, capture_output=True, text=True, timeout=30)
+        self.assertEqual(p_all.returncode, 0)
+        self.assertIn("owner:", p_all.stdout)
+        self.assertIn("indigo:", p_all.stdout)
+
+    def test_csapi_save_state_eafp(self):
+        import tempfile
+        csapi = _load("csapi_quota")
+        with tempfile.TemporaryDirectory() as tmpdir:
+            test_file = os.path.join(tmpdir, "nested", "quota.json")
+            orig_file = csapi.QUOTA_FILE
+            orig_dir = csapi.QUOTA_DIR
+            try:
+                csapi.QUOTA_FILE = test_file
+                csapi.QUOTA_DIR = os.path.dirname(test_file)
+                # First save should create directory via FileNotFoundError catch
+                csapi.save_state({"owner": {"count": 10}})
+                self.assertTrue(os.path.exists(test_file))
+                # Second save should succeed directly via fast path
+                csapi.save_state({"owner": {"count": 20}})
+                loaded = csapi.load_state()
+                self.assertEqual(loaded.get("owner", {}).get("count"), 20)
+            finally:
+                csapi.QUOTA_FILE = orig_file
+                csapi.QUOTA_DIR = orig_dir
+
 
 class TestWebwrightHelpers(unittest.TestCase):
     def test_next_run_id(self):

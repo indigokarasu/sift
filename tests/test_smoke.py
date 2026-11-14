@@ -132,6 +132,18 @@ class TestWaybackHelpers(unittest.TestCase):
         raw = _gzip.compress(b"<html>hello</html>")
         self.assertEqual(wb._decode_body(raw, "gzip"), b"<html>hello</html>")
 
+        # Multi-member gzip stream to verify fallback path when unused_data is present
+        multi_raw = _gzip.compress(b"<html>part 1 </html>") + _gzip.compress(b"<html>part 2</html>")
+        self.assertEqual(wb._decode_body(multi_raw, "gzip"), b"<html>part 1 </html><html>part 2</html>")
+
+        # Truncated gzip stream (missing trailer/EOF) falls back to gzip.decompress and returns raw
+        truncated = raw[:len(raw) - 10]
+        self.assertEqual(wb._decode_body(truncated, "gzip"), truncated)
+
+        # Corrupted gzip payload gracefully returns raw bytes
+        corrupted = b"\x1f\x8b\x08not-a-valid-gzip-stream"
+        self.assertEqual(wb._decode_body(corrupted, "gzip"), corrupted)
+
     def test_decode_body_deflate(self):
         import zlib
         wb = _load("wayback_fallback")
